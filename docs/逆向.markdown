@@ -1,0 +1,7 @@
+---
+layout: default
+title: decompilation
+nav_order: 13
+---
+
+- [iOS符号表恢复&逆向支付宝](http://blog.imjun.net/posts/restore-symbol-of-iOS-app/)
