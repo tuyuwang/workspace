@@ -1,0 +1,133 @@
+---
+layout: default
+title: 性能优化
+nav_order: 5
+parent: 面试
+---
+
+## 分类
+
+- 界面渲染
+- 网络请求
+- 启动时间
+- 包的大小
+- 数据io
+
+
+
+### Instruments
+
+#### Core Animation
+
+- Color Blended Layers
+用于检测哪里发生了图层混合，以红色为标记
+
+图层混合：多层layer透明度并非都为100%的混合显示。
+alpha通道： 记录透明度信息的特殊图层。
+
+解决: 
+图片不含alpha通道
+设置白色背景
+opaque=true
+
+- Color Hits Green and Misses Red
+用于检测光栅化，命中缓存显示为绿色，否则为红色。
+
+ 光栅化是将一个layer预先渲染成位图(bitmap)，然后加入缓存中。如果对于阴影效果这样比较消耗资源的静态内容进行缓存，可以得到一定幅度的性能提升。
+
+ 将label的layer光栅化：
+ > label.layer.shouldRasterize = true
+ 
+光栅化的缓存机制是一把双刃剑，先写入缓存再读取有可能消耗较多的时间。因此光栅化仅适用于较复杂的、静态的效果。
+
+- Color Copied Images
+颜色格式
+用于检测图片实时的格式转换，如果转换则为蓝色。
+
+比如应用中有一些从网络下载的图片，而GPU恰好不支持这个格式，这就需要CPU预先进行格式转化
+
+- Color Misaligned Images
+图片大小
+
+用于检测图片是否被缩放了，如果被缩放则标记为黄色，如果没有像素对齐则标记为紫色
+
+图片的缩放需要占用时间，调整所有图片的像素大小以避免不必要的缩放。
+
+- Color Offscreen-Rendered Yellow
+离屏渲染
+用于检测离屏渲染，标记为黄色，手动触发离屏渲染layer.shouldRasterize = true（开启光栅化）
+
+可能造成离屏渲染:
+1、重写drawRect方法
+2、设置圆角+masksToBounds=true
+3、阴影(layer.masksToBounds, layer.shadow*)
+
+首先，OpenGL提交一个命令到Command Buffer，随后GPU开始渲染，渲染结果放到Render Buffer中，这是正常的渲染流程。
+
+如果添加一个蒙版(mask)：在前两个渲染通道中，GPU分别得到了纹理(texture，也就是那个相机图标)和layer(蓝色的蒙版)的渲染结果。但这两个渲染结果没有直接放入Render Buffer中，也就表示这是离屏渲染。直到第三个渲染通道，才把两者组合起来放入Render Buffer中。
+
+离屏渲染意味着把渲染结果临时保存，等用到时再取出，因此相对于普通渲染更占用资源。
+
+- Color Compositing Fast-Path Blue
+快速路径
+
+用于标记由硬件绘制的路径，蓝色越多越好。
+
+- Flash updated Regions
+变化区域
+
+用于标记发生重绘的区域
+
+刷新视图时，我们应该把需要重绘的区域尽可能缩小。对于未发生变化的内容则不应该重绘。一个典型的例子是系统的时钟应用，绝大多数时候只有显示秒针的区域需要重绘
+
+
+总结:
+
+#### 避免图层混合
+
+- 确保控件的opaque属性设置为true，确保backgroundColor和父视图颜色一致且不透明。
+
+- 如无特殊需要，不要设置低于1的alpha值。
+
+- 确保UIImage没有alpha通道。
+
+#### 避免临时转换
+
+- 确保图片大小和frame一致，不要在滑动时缩放图片。
+
+- 确保图片颜色格式被GPU支持，避免劳烦CPU转换。
+
+#### 慎用离屏渲染
+
+- 绝大多数时候离屏渲染会影响性能。
+
+- 重写drawRect方法，设置圆角、阴影、模糊效果，光栅化都会导致离屏渲染。
+
+- 设置阴影效果是加上阴影路径。
+
+- 滑动时若需要圆角效果，开启光栅化
+
+### UITableView优化
+
+- 重用cell
+- 对于高度固定的cell，直接设置高度；对于动态的，估算高度后进行缓存
+- cell中使用不透明的视图
+- 图片异步加载
+- 非必要不使用reloadData
+
+
+
+### 网络请求
+通过系统方法缓存get请求数据
+~~~
+NSURLCache *urlCache = [[NSURLCache alloc] initWithMemoryCapacity:4 * 1024 * 1024 diskCapacity:20 * 1024 * 1024 diskPath:nil];
+[NSURLCache setSharedURLCache:urlCache];
+~~~
+
+文件的缓存需要借助ETag或Last-Modified判断缓存是否过期
+
+
+### 参考
+
+    + [UIKit性能调优实战讲解](http://www.cocoachina.com/articles/15238)
+    + [iOS网络缓存扫盲篇](https://www.jianshu.com/p/fb5aaeac06ef)
