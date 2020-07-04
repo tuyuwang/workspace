@@ -3,3 +3,4 @@ _site/
 .jekyll-cache/
 .jekyll-metadata
 Bonree.markdown
+_config_local.yml

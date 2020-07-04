@@ -2,7 +2,7 @@
 layout: default
 title: http/https
 nav_order: 6
-parent: 面试
+parent: interview
 ---
 
 ## Http

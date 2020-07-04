@@ -2,7 +2,7 @@
 layout: default
 title: 内存泄露
 nav_order: 2
-parent: 面试
+parent: interview
 ---
 
 ## iOS内存调研报告

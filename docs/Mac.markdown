@@ -50,7 +50,3 @@ kill -9 pid
 ### adb
 > brew cask install android-platform-tools
 
-### 云服务器
-ip: 47.107.172.52
-密码: 280294
-控制台: https://ecs.console.aliyun.com/?spm=5176.2020520127.aliyun_sidebar.daliyun_sidebar_ecs.81d11a78XJV9jv#/server/region/cn-shenzhen?status=Running

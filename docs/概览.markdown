@@ -6,6 +6,5 @@ permalink: /
 has_children: true
 ---
 
-- 北京博睿
 - [代码实时共享](https://codeshare.io)
 

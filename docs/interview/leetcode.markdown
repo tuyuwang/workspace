@@ -2,7 +2,7 @@
 layout: default
 title: leetcode
 nav_order: 3
-parent: 面试
+parent: interview
 ---
 
 ## 242.有效的字母异位词

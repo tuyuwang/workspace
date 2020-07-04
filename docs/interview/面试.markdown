@@ -1,8 +1,8 @@
 ---
 layout: default
-title: 面试
+title: interview
 nav_order: 7
-permalink: /docs/面试
+permalink: /docs/interview
 has_children: true
 ---
 

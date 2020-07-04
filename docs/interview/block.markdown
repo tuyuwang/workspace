@@ -2,7 +2,7 @@
 layout: default
 title: block
 nav_order: 8
-parent: 面试
+parent: interview
 ---
 
 ## block在内存中的结构

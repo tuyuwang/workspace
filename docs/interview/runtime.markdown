@@ -2,7 +2,7 @@
 layout: default
 title: runtime
 nav_order: 4
-parent: 面试
+parent: interview
 ---
 
 ## runtime原理

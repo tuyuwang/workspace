@@ -2,10 +2,10 @@
 layout: default
 title: 基础知识
 nav_order: 1
-parent: 面试
+parent: interview
 ---
 
-#### 基础知识
+## 基础知识
 
 1、@property中的属性关键字
 - atomic/nonatomic
@@ -146,7 +146,7 @@ OC发送消息时，会通过objc_msgSend进行实现，在这个过程中，会
 
 - RSA加签: 用私钥在客户端加签，然后公钥在服务器用公钥验签。验证消息完整性。
 
-8、[self与super](https://blog.csdn.net/li15809284891/article/details/54836905)
+8、self与super
 
 self是关键字，代表当前方法的调用者
 
@@ -254,9 +254,11 @@ Tagged Pointer通过在其最后一个bit位设置一个特殊标记，用于将
 timer作为VC的属性，被VC强引用，创建timer对象时VC作为target被timer强引用，即循环引用。
 
 - weak指针：
+
 既然是强引用导致循环引用，那么用__weak修饰self就好了，想法是对的，但是做法是无效的。因为无论是weak还是strong修饰，在NSTimer中都会重新生成一个新的强引用指针指向self，导致循环引用的。
 
 - 类方法：
+
 创建一个继承NSObject的子类TempTarget，并创建开启定时器的方法，并弱引用target
 ~~~
 self.timer = [TempTarget scheduledTimerWithTimeInterval:1 target:self selector:@selector(timerStart:) userInfo:nil repeats:YES];
@@ -265,6 +267,7 @@ self.timer = [TempTarget scheduledTimerWithTimeInterval:1 target:self selector:@
 VC强引用timer，因为timer的target是TempTarget实例，所以timer强引用TempTarget实例，而TempTarget实例弱引用VC，解除循环引用。
 
 - WeakProxy:
+
 创建一个继承NSProxy的子类WeakProxy，并实现消息转发的相关方法。弱引用target
 ~~~
 self.timer = [NSTimer scheduledTimerWithTimeInterval:1 target:[WeakProxy proxyWithTarget:self] selector:@selector(timerStart:) userInfo:nil repeats:YES];
@@ -276,7 +279,9 @@ self.timer = [NSTimer scheduledTimerWithTimeInterval:1 target:[WeakProxy proxyWi
 将timer的target设置为WeakProxy实例，利用消息转发机制实现执行VC中的计时方法，解决循环引用。
 
 - 使用CGD的Timer
+
 - Block:
+
 创建NSTimer的分类NSTimer+UnretainCycle
 ~~~
 + (NSTimer *)lhScheduledTimerWithTimeInterval:(NSTimeInterval)inerval
@@ -305,10 +310,15 @@ self.timer = [NSTimer mxScheduledTimerWithTimeInterval:0.5 repeats:YES block:^(N
 UIResponder是所有响应对象的基类，在UIResponder类中定义了处理上述各种事件的接口。我们熟悉的UIApplication、 UIViewController、UIWindow和所有继承自UIView的UIKit类都直接或间接的继承自UIResponder，所以它们的实例都是可以构成响应者链的响应者对象
 
 响应者链：
+
 1、响应者链通常是由视图（UIView）构成的；
+
 2、一个视图的下一个响应者是它视图控制器（UIViewController）（如果有的话），然后再转给它的父视图（Super View）；
+
 3、视图控制器（如果有的话）的下一个响应者为其管理的视图的父视图；
+
 4、单例的窗口（UIWindow）的内容视图将指向窗口本身作为它的下一个响应者
+
 5、单例的应用（UIApplication）是一个响应者链的终点，它的下一个响应者指向nil，以结束整个循环。
 
 第一响应者（First responder）指的是当前接受触摸的响应者对象（通常是一个UIView对象），即表示当前该对象正在与用户交互，它是响应者链的开端。整个响应者链和事件分发的使命都是找出第一响应者。
@@ -326,6 +336,7 @@ hitTest:withEvent:忽略三种情况：
 - alpha<0.01
 
 14、视图控制器的生命周期方法
+
 1、initWithNibName:bundle:
 初始化UIViewController，执行关键数据初始化操作，非StoryBoard创建UIViewController都会调用这个方法。
 ** 注意: 不要在这里做View相关操作，View在loadView方法中才初始化。**
@@ -361,22 +372,28 @@ loadView方法不应该直接被调用，而是由系统调用。它会加载或
 7、viewWillLayoutSubviews
 view 即将布局其Subviews。 比如view的bounds改变了(例如:状态栏从不显示到显示,视图方向变化)，要调整Subviews的位置，在调整之前要做的工作可以放在该方法中实现
 
-8.viewDidLayoutSubviews
+8、viewDidLayoutSubviews
+
 view已经布局其Subviews，这里可以放置调整完成之后需要做的工作。
 
-9. viewDidAppear
+9、 viewDidAppear
+
 在view被添加到视图层级中以及多视图，上下级视图切换时调用这个方法，在这里可以对正在显示的视图做进一步的设置。
 
-10.viewWillDisappear
+10、viewWillDisappear
+
 在视图切换时，当前视图在即将被移除、或被覆盖是，会调用该方法，此时还没有调用removeFromSuperview。
 
-11. viewDidDisappear
+11、viewDidDisappear
+
 view已经消失或被覆盖，此时已经调用removeFromSuperView;
 
-12. dealloc
+12、 dealloc
+
 视图被销毁，此次需要对你在init和viewDidLoad中创建的对象进行释放。
 
-13.didReceiveMemoryWarning
+13、didReceiveMemoryWarning
+
 在内存足够的情况下，app的视图通常会一直保存在内存中，但是如果内存不够，一些没有正在显示的viewController就会收到内存不足的警告，然后就会释放自己拥有的视图，以达到释放内存的目的。但是系统只会释放内存，并不会释放对象的所有权，所以通常我们需要在这里将不需要显示在内存中保留的对象释放它的所有权，将其指针置nil。
 
 总结，两种方式:
@@ -434,8 +451,11 @@ SIGPIPE: 管道另一端没有进程接收数据，导致管道破裂而崩溃�
 - 试图訪问一块无文件内容相应的内存区域，比方超过文件尾的内存区域，或者以前有文件内容相应，如今为还有一进程截断过的内存区域。
 
 三、SIGBUS与SIGSEGV信号的一般差别例如以下: 
-    1.SIGBUS(Bus error)意味着指针所相应的地址是有效地址，但总线不能正常使用该指针。一般是未对齐的数据訪问所致。 
-    2.SIGSEGV(Segment fault)意味着指针所相应的地址是无效地址。没有物理内存相应该地址。 
+    
+1、SIGBUS(Bus error)
+意味着指针所相应的地址是有效地址，但总线不能正常使用该指针。一般是未对齐的数据訪问所致。 
+
+2、SIGSEGV(Segment fault)意味着指针所相应的地址是无效地址。没有物理内存相应该地址。 
 
 16、webview插入js, 在webView:didCreateJavaScriptContext:forFrame:插入
 
@@ -451,15 +471,20 @@ SIGPIPE: 管道另一端没有进程接收数据，导致管道破裂而崩溃�
 - 响应数据大小
 
 18、webviewJavascript原理
+
 1、js调用OC: 通过设置iframe.src，发送https请求，从代理方法shouldStartLoadWithRequest中截取数据message，然后从注册的回调字典中获取回调并调用
->WVJBHandler handler = self.messageHandlers[message[@"handlerName"]];
+~~~
+WVJBHandler handler = self.messageHandlers[message[@"handlerName"]];
+~~~
 
 2、OC调用JS: callHandler->转换为js字符串->使用stringByEvaluatingJavascript方法调用
 
 19、drawRect内存爆增的原因
+
 只要重写drawRect,即使空方法，也会增长许都内存(5M)
 
 20、圆角的实现
+
 UIBezierPath+CAShapeLayer
 ~~~
 /**
@@ -498,6 +523,7 @@ UIBezierPath+CAShapeLayer
 ~~~
 
 21、FPS
+
 Frames Per Second的简称缩写，意思是每秒传输帧数，可以理解为我们常说的刷新率。FPS是测量用于保存、显示动态视频的信息数量。每秒钟帧数愈多，所显示的画面会愈流畅，fps值越低就越卡顿，所以这个值在一定程度上可以衡量应用在图像绘制渲染处理时的性能。
 
 22、三种定时器
@@ -506,6 +532,7 @@ Frames Per Second的简称缩写，意思是每秒传输帧数，可以理解为
 - GCD
 
 CADisplayLink
+
 优点：依托于设备屏幕刷新频率触发事件，所以其触发时间上是最准确的。也是最适合做UI不断刷新的事件，过度相对流畅，无卡顿感。
 
 缺点：
@@ -513,7 +540,9 @@ CADisplayLink
 - selector事件执行时间如果大于其触发间隔会造成掉帧现象
 
 GCDTimer
+
 优点: 不受当前runloopMode影响
+
 缺点：计时效应仍不是百分之百准确的。另外，他的触发事件也有可能被阻塞，当GCD内部管理的所有线程都被占用时，其触发事件将被延迟。
 
 ## 参考
@@ -524,3 +553,5 @@ GCDTimer
 - [iOS事件响应链(通俗易懂篇)](https://blog.csdn.net/u013602835/article/details/79986819)
 - [UIViewController 的生命周期](https://www.jianshu.com/p/d60b388b19f5)
 - [iOS中视图控制器的生命周期](https://www.cnblogs.com/gzhu-lkun/p/5967055.html)
+- [self与super](https://blog.csdn.net/li15809284891/article/details/54836905)
+
