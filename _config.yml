@@ -59,9 +59,9 @@ color_scheme: "nil"
 permalink: pretty
 
 # Aux links for the upper right navigation
-# aux_links:
-#   "Just the Docs on GitHub":
-#     - "//github.com/pmarsceill/just-the-docs"
+aux_links:
+   "博客":
+     - "/"
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
