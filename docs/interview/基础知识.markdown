@@ -554,4 +554,5 @@ GCDTimer
 - [UIViewController 的生命周期](https://www.jianshu.com/p/d60b388b19f5)
 - [iOS中视图控制器的生命周期](https://www.cnblogs.com/gzhu-lkun/p/5967055.html)
 - [self与super](https://blog.csdn.net/li15809284891/article/details/54836905)
+- [UIView的hitTest和pointInside方法](https://www.jianshu.com/p/c87de31b3985)
 
