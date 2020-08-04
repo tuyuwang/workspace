@@ -51,6 +51,19 @@ has_children: true
 
 数据结构一直是技术面试的重点，大多数面试题都是围绕着数组、字符串、链表、树、栈及队列这几种常见的数据结构展开的，因此每一个应聘者都要熟练掌握这几种数据结构。数组和字符串是两种最基本的数据结构，它们用连续内存分别存储数字和字符。链表和树是面试中出现频率最高的数据结构。由于操作链表和树需要操作大量的指针，应聘者在解决相关问题的时候一定要留意代码的鲁棒性，否则容易出现程序崩溃的问题。栈是一个与递归紧密相关的数据结构，同样队列也与广度优先遍历算法紧密相关。深刻理解这两种数据结构能帮助我们解决很多算法问题。
 
+### 技术大纲
+![UI](../../images/Interview/UI.jpg)
+![Runtime](../../images/Interview/Runtime.jpg)
+![Runloop](../../images/Interview/Runloop.jpg)
+![多线程](../../images/Interview/多线程.jpg)
+![网络](../../images/Interview/网络.jpg)
+![Block](../../images/Interview/Block.jpg)
+![内存管理](../../images/Interview/内存管理.jpg)
+![架构](../../images/Interview/架构.jpg)
+![设计模式](../../images/Interview/设计模式.jpg)
+![算法](../../images/Interview/算法.jpg)
+![第三方框架](../../images/Interview/第三方框架.jpg)
+
 #### 简历
 使用STAR模型描述自己经历过的每一个项目
 - 简短的项目背景：规模、功能、目标用户
