@@ -22,5 +22,11 @@ runtime 对注册的类， 会进行布局，对于 weak 对象会放入一个 h
 
 #### copy与block的原理
 
+~~~
+NSString * (^capString)(NSString *) = ^NSString *(NSString *string) {
+        return [NSString stringWithFormat:@"%@%@", [string substringToIndex:1].uppercaseString, [string substringFromIndex:1]];
+    };
 
+ capString(str);
+~~~
 #### copy关键字的作用

@@ -176,6 +176,10 @@ attributes #0 = { nounwind ssp uwtable }
 attributes #1 = { nounwind }
 ~~~
 
+### 命令
+
+将.m变为.cpp实现，可以观察oc转cpp实现方式
+> clang -rewrite-objc main.m 
 
 ### 参考
 - [编译器](https://objccn.io/issue-6-2/)
