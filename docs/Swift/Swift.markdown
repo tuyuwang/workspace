@@ -33,3 +33,526 @@ Data结构体实际上是对引用类型NSData的一个封装。当Data结构体
 
 Swift中，像是数组这样的集合类型也都是对引用类型的封装，它们同样使用了写时复制的方式在提供值语义的同时保持高效。不过，如果集合元素的类型是引用类型(比如一个含有对象的数组)的话，对象本身将不会被复制，只有对它的引用会被复制。也就是说，Swift的数组只有当其中的元素满足值语义时，数组本身才具有值语义。
 
+有些类是完全不可变的，也就是说，从被创建以后，它们就不提供任何方法改变它们的内部状态。这意味着即使它们是类，它们依然具有值语义（因为就算被到处使用也从不会改变）。但是需要注意的是，只有那些标记为final的类能够保证不被子类化，也不会被添加可变状态。
+
+在Swift中，函数也是值。你可以将一个函数赋值给一个变量，也可以创建一个包含函数的数组，或者调用变量所持有的函数。如果一个函数接受别的函数作为参数(比如map函数接受一个转换函数，并将其应用到数组中的每个元素中)，或者一个函数的返回值是函数，那么这样的函数叫做高阶函数。
+
+函数不需要被声明在最高层级---你可以在一个函数内部声明另一个函数，也可以在一个do作用域或者其他作用域中声明函数。如果一个函数被定义在外层作用域中，但是被传递出这个作用域（比如这个函数被作为其他函数的返回值时），它将能够捕获局部变量。这些局部变量将存在于函数中，不会随着局部作用域的结束而消亡，函数也将持有它们的状态。这种行为的变量被称为闭合变量，我们把这样的函数叫做闭包。
+
+函数可以通过func关键字来定义，也可以通过{}这样的简短的闭包表达式来定义，有时简称为闭包，不过不要让这种叫法蒙蔽了你的双眼。实际上使用func关键字的函数，如果它包含了外部的变量，那么他也是一个闭包。
+
+函数是引用类型。也就是说，将一个捕获了状态的函数赋值给另一个变量，并不会导致这些状态被复制。和对象引用类似，这些状态会被共享。换句话说，当两个闭包持有同样的局部变量时，它们是共享这个变量以及它的状态的。
+
+定义在类或者协议中的函数是方法，它们有一个隐式的self参数。有时我们会把那些不是方法的函数叫做自由函数，这可以将它们与方法区分开来。
+
+自由函数和那些在结构体上调用的方法是静态派发的。对于这些函数的调用，在编译的时候已经确定了。对于静态派发的调用，编译器可能会实施内联优化，也就是说，完全不去做函数调用，而是将函数调用替换为函数中需要执行的代码。优化器还能够帮助丢弃或者简化那些在编译时就能确定不会被实际执行的代码。
+
+子类型和方法重写是实现多态特性的一种手段，也就是说，根据类型的不同，同样的方法会呈现出不同的行为。第二种方式是函数冲载。它是指为不同类型多次写一个函数的行为。实现多态的第三种方法是通过泛型，也就是一次性地编写能够接受任意类型的函数或者方法，不过这些方法的实现会各有不同。与方法重写不同的是，函数重载和泛型中的方法在编译期间就是可以确定的。
+
+## Swfit风格指南
+
+- 对于命名，在使用时能清晰表意是最重要的。[Swift API设计准则](https://swift.org/documentation/api-design-guidelines/)
+- 简洁经常有助于代码清晰，但是简洁本身不应该独自成为我们编码的目标。
+- 务必为函数添加文档注释---特别是泛型函数。
+- 类型使用大写字母开头，函数、变量和枚举成员使用小写字母开头。
+- 使用类型推断。省略掉显而易见的类型会有助于提高可读性。
+- 如果存在歧义或者进行定义契约（比如func就需要显式地指定返回类型）时候不要使用类型推断。
+- 优先选择结构体，只在确实需要使用到类特有的特性或者引用语义时才使用类。
+- 除非你的设计就是希望某个类被继承使用，否则都应该将它们标记为final。如果你允许这个类被模块内部继承，但不允许外部的用户进行子类化，那么标记这个类为public,而不是open。
+- 除非一个闭包后面立即跟随有左括号，否则应该使用尾随闭包的语法。
+- 使用guard来提早退出方法。
+- 避免对可选值进行强制解包和隐式强制解包。
+- 不要写重复的代码。试着将它们提取到一个函数里，并且考虑将这个函数转化为协议扩展的可能性。
+- 试着去使用map和reduce,但这不是强制的。当合适的时候，使用for循环也无可厚非。高阶函数的意义是让代码可读性更高。但是如果使用reduce场景难以理解的话，强行使用往往事与愿违，这种时候简单的for循环可能会更清晰。
+- 试着去使用不可变值：除非你需要改变某个值，否则都应该使用let来声明变量。
+- 除非你确实需要，否则不要使用self。不过在闭包表达式中，self是被强制使用的，这是一个清晰的信号，表明闭包将会捕获self。
+- 尽可能地对现有的类型和协议进行扩展，而不是写一些自由函数。
+
+## 数组
+
+### 数组索引
+- 迭代数组：for x in array
+- 迭代除了第一个元素以外的数组其余部分： for x in array.dropFirst()
+- 迭代除了最后5个元素以外的数组：for x in array.dropLast(5)
+- 列举数组中的元素和对应的下标：for (num, element) in collection.enumerated()
+- 寻找一个指定元素的位置：if let idx = array.index{someMatchingLogic($0)}
+- 对数组中所有元素进行变形：array.map{ someTransformation($0) }
+- 筛选出符合某个特定标准的元素：array.filter{ someCriteria($0) }
+
+first和last属性返回一个可选值，当数组为空时，它们返回nil。first相当于isEmpty? nil : self[0]。类似地，如果数组为空时调用removeLast，那么将会导致崩溃，然后popLast在数组不为空时删除最后一个元素并返回它，在数组为空时，它将不执行任何操作，直接返回nil。
+
+### 数组变形
+
+#### Map
+
+- 长度很短，意味着错误少，比原来更清晰
+- 一个函数被作用在数组的每个元素上
+- 返回一个新数组，包含所有被转换后的结果
+
+实现：把for循环中的代码模版部分，使用一个泛型函数封装起来。
+~~~
+extension Array {
+	func map<T>(_ transform:(Element) -> T) -> [T] {
+		var result:[T] = []
+		result.reserveCapacity(count)
+		for x in self {
+			result.append(transform(x))
+		}
+		return result
+	}
+}
+~~~
+
+Element是数组中包含的元素类型的占位符，T是元素转换之后的类型占位符。map函数本身并不关心Element和T究竟是什么，它们可以是任意类型。T的具体类型由函数调用者传入给map的transform方法的返回值类型决定。
+
+
+#### 使用函数将行为参数化
+
+map设法将模版代码分离出来，这些模版代码并不会随着每次调用发生变动，发生变动的那些功能代码，也就是如何转换每个元素的逻辑。map通过调用者所提供的变换函数作为参数来做到这一点。
+
+- map和flatMap：对元素进行变换
+- filter：只包含特定的元素
+- allSatisfy：针对一个条件测试所有元素
+- reduce：将元素聚合成一个值
+- forEach：访问每一个元素
+- sort(by:)，sorted(by:),lexicographicallPrecedes(_:by:),partition(by:)重排元素
+- firsIndex(where:),lastIndex(where:),first(where:),last(where:),contains(where:) 元素是否存在
+- min(by:),max(by:)：找到所有元素的最小、最大值
+- elementsEqual(_:by:)、starts(with:by:) 将元素与另一个数组进行比较
+- spilt(whereSeparator:)：把所有元素分成多个数组
+- prefix(while:)： 从头取元素直到条件不成立。
+- drop(while:) 当条件为真时，丢弃元素，一旦不为真，返回其余的元素(和prefix类似，不过返回相反的集合)
+- removeAll(where:)：删除所有符合条件的元素
+
+
+#### 可变和带有状态的闭包
+
+闭包是指那些可以捕获和修改自身作用域之外的变量的函数，当它和高阶函数结合时也就成为一了一种强大的工具。
+
+带有状态的闭包实现:
+~~~
+extension Array {
+	func accumulate<Result>(_ initialResult: Result, _ nextPartialResult:(Result, Element) -> Result) -> [Result] {
+		var running = initialResult
+		return map { next in
+			running = nextPartialResult(running,next)
+			return running
+		}
+	}
+}
+~~~
+
+这个函数创建了一个中间变量running来存储每一步的值，然后使用map来从这个中间值逐步计算结果数组:
+~~~
+[1,2,3,4].accumulate(0,+) // [1,3,6,10]
+~~~
+
+#### filter
+
+检查一个数组，然后将这个数组中符合一定条件的元素过滤出来并用它们创建一个新的数组。对数组进行循环并且根据条件过滤其中的模式可以用filter方法表示：
+
+~~~
+let nums = [1,2,3,4,5,6,7,8,9,10]
+nums.filter {num in num % 2 == 0 } // [2,4,6,8,10]
+nums.filter { $0 % 2 == 0 }
+~~~
+
+实现：
+~~~
+extensino Array {
+	func filter(_ isIncluded:(Element) -> Bool) -> [Element] {
+		var result:[Element] = []
+		for x in self where isIncluded(x) {
+			result.append(x)
+		}
+		return result
+	}
+}
+~~~
+
+需要所有结果时才考虑用filter
+
+#### reduce
+
+map和fliter都作用在一个数组上，并产生另一个新的、经过修改的数组。不过有时候，你可能会把所有元素合并为一个新的单一的值。比如，要是我们想将元素的值全部加起来，可以这样写：
+~~~
+let fibs = [0,1,2,3,5]
+var total = 0
+for num in fibs {
+	total = total + num
+}
+
+total //12
+~~~
+
+reduce方法采用这种模式，并抽象出两部分；一个初始值(在这里是0),以及一个将中间值(total)与序列中的元素(num)进行合并的函数。使用reduce，我们可以将上面的例子重写为这样：
+~~~
+let sum = fibs.reduce(0) {total, num in total + num }//12
+~~~
+
+运算符也是函数，所以也可以写成这样：
+~~~
+fibs.reduce(0,+) // 12
+~~~
+
+reduce的输出值类型不必和元素的类型相同。举个例子，如果我们想将一个整数列表转换为一个字符串，并且每个数字后面跟一个逗号和空格，那么可以这样：
+~~~
+fibs.reduce(""){str.num in str + "\(num),"} // 0,1,1,2,3,5,
+~~~
+
+reduce的实现是这样的：
+~~~
+extensino Array {
+	func reduce<Result>(_ initialResult: Result, _ nextPartialResult:(Result,Element) -> Result) -> Result {
+		var result = initialResult
+		for x in self {
+			resutlt = nextPartialResult(result,x)
+		}
+		return result
+	}
+}
+~~~
+
+
+#### 一个展平的map
+
+有时候我们想对一个数组进行map，但这个变形函数返回的是另一个数组，而不是单独的元素。
+
+举个例子，假如我们有个叫做extracLinks的函数，它会读取一个markdown文件，并返回包含该文件中所有链接的URL的数组。这个函数是这样的：
+~~~
+func extractLinks(markdownFile: String) -> [URL]
+~~~
+
+如果我们有一堆markdown文件，并且想将这些文件中所有的链接都提取到一个单独的数组中的话，可以尝试使用markdownFile.map(extractLinks)。不过问题是这个方法返回的是一个包含了URL的数组的数组，其中每个元素都是一个文件中的URL数组。现在你可以在执行map得到了一个数组的数组之后，调用joined把这个二维数组展平(flatten)成一个一维数组：
+~~~
+let markdownFiles:[String] = //...
+let nestedLinks = markdownFiles.map(extractLinks)
+let links = nestedLinks.joined()
+~~~
+
+flatMap方法将变换和展平这两个操作合并为一个步骤。markdownFiles.flatMap(links)把所有markdown文件中的URL放到一个数组里面返回。
+
+flatMap的函数签名看起来和map基本一致，只是它的变换函数返回的是一个数组。在实现中，它使用append（contentsOf:）代替了append(_ :),这样返回的数组是展平了:
+~~~
+extension Array {
+	func flatMap<T>(_ transform:(Element) -> [T]) -> [T] {
+		var result: [T] = []
+		for x in self {
+			result.append(contentsOf: transform(x))
+		}
+		return result
+	}
+}
+~~~
+flatMap的另一个常见使用情景是将不同数组里的元素进行合并。为了得到两个数组中元素的所有配对组合，我们可以对其中一个数组进行flatMap，然后在变换函数中对另一个数组进行map操作：
+~~~
+let suits = ["♠", "♥", "♣", "♦"]
+let ranks = ["J","Q","K","A"]
+let result = suits.flatMap { suit in
+ranks.map { rank in (suit, rank)
+} }
+/*
+[("♠", "J"), ("♠", "Q"), ("♠", "K"), ("♠", "A"), ("♥", "J"), ("♥",
+"Q"), ("♥", "K"), ("♥", "A"), ("♣", "J"), ("♣", "Q"), ("♣", "K"), ("♣", "A"), ("♦", "J"), ("♦", "Q"), ("♦", "K"), ("♦", "A")]
+*/
+~~~
+
+#### 使用forEach进行迭代
+
+其与for循环的工作方式非常类似：把传入的函数对序列中的每个元素执行一次。和map不通，forEach不返回任何值，这一点特别适合执行那些带副作用的操作。
+
+对集合中的每个元素都调用一个函数的话，使用forEach比较合适。比如你正在iOS上实现一个view controller，然后想把一个数组中的视图都加到当前view上的话，只需要写theViews.forEach(view.addSubview)就足够了。
+
+在forEach中的return并不能让外部函数返回，它仅仅只是让闭包本身返回。
+~~~
+(1..<10).forEach{ number in
+	printf(number)
+	if number > 2 { return }
+}
+~~~
+
+这段代码将会把输入的数字全部打印出来。return语句并不会终止循环，它做的仅仅是从闭包中返回。因此在forEach的实现会开始下一个循环迭代。这种时候，用for循环较好。
+
+
+### 数组切片
+
+想得到数组中除了首个元素以外的其他元素，可以这么做：
+~~~
+let slice = fibs[1...]
+slice //[1,1,2,3,5]
+type(of:slice) //ArraySlice<Int>
+~~~
+
+它将返回数组的一个切片(slice)，其中包含了原数组中从第二个元素开始的所有部分。切片类型只是数组的一种表示方式，它背后的数据仍然是原来的数组，只不过是用切片的方式进行表示。因为数组的元素不会被复制，所以创建一个切片的代价是很小的。
+
+因为ArraySlice和Array都满足了相同的协议(当中最终的就是Collection协议)，所以两者具有的方法是一致的，因此你可以把切片当作数组来进行处理。如果你需要将切片转换为数组的话，是可以通过它传递给Array的构建方法来完整：
+~~~
+let newArray = Array(slice)
+type(of:newArray) // Array<Int>
+~~~
+
+需要谨记的是切片和它背后的数组是使用相同的索引来引用元素的。因此，切片索引不需要从0开始。例如，在上面我们的fibs[1...]创建的切片的第一个元素的索引是1，因此错误地访问slice(0)元素会使我们的程序因为越界而崩溃。如果你操作切片的话，建议基于startIndex和endIndex属性做索引计算。
+
+## 字典
+
+字典包含键以及它们所对应的值，其中每个键都是唯一的。通过键来获取值所花费的平均时间是常量级的，作为对比，在数组中搜寻一个特定元素所花的时间将与数组尺寸成正比。
+
+### 可变性
+
+和数组一样，使用let定义的字典是不可变的，你不能向其中添加、删除或者修改条目。可以使用var定义一个可变字典。想要从字典移除一个值的话，要么用下标将对应的值设为nil，要么调用removeValue(forKey:)。后一种方法还会将被删除的值返回(如果删除的键不存在，则返回nil)
+
+### 一些有用的字典方法
+
+场景：将一个默认的设置字典和某个用户更改过的自定义设置字典合并。merge(_ : uniquingKeysWith:). 可以接受两个参数，第一个要进行合并的键值对，第二个是定义如何合并相同键的两个值的函数。可以使用该方法将一个字典合并至另一个字典中去。
+
+~~~
+var settings = defaultSettings
+let overriddenSettings:[String: Setting] = ["Name",.text("Jane's iPhone")]
+settings.merge(overriddenSettings, uniquingKeysWith: {$1})
+settings
+//["Name": Setting.text("Jane's iPhone"), "Airplane Mode": Setting.bool(false)]
+
+
+~~~
+使用了{$1}来作为合并两个值的策略。也就是说，如果某个键同时存在于settings和ovveriddenSettings中时，我们使用ovveriddenSettings中的值。
+
+还可以从一个(Key,Value)键值对的序列中构建一个新的字典。如果我们能保证键是唯一的，那么就可以使用Dictionary(uniqueKeysWithValues:)。不过，对于一个序列中某个键可能存在多次的情况，就和上面一样，我们需要提供一个函数来对相同键对应的两个值进行合并。
+
+比如，要计算序列中某个元素的出现次数，我们可以对每个元素进行映射，将它们和1对应起来，然后从得到的(元素，次数)的键值对序列中创建字典。如果我们遇到相同键下的两个值（也就是说，我们看到了同样的元素若干次），我们需要将次数用+累加起来就行了：
+
+~~~
+extension Sequence where Element: Hashable {
+	var frequencies:[Element: Int] {
+	let frequencyPairs = self.map { ($0, 1) }
+	return Dictionary(frequencyPairs, uniquingKeysWith: +)
+	}
+}
+
+let frequencies = "hello".frequencies // ["o":1, "h":1, "e":1, "l":2]
+frequencies.filter { $0.value > 1} // ["l": 2]
+~~~
+
+对字典的值做映射。因为Dictionary是一个实现了Sequence的类型，所以它已有一个map方法来产生数组。不过有时候需要保持字典结构，只对其中的值进行变换，maoValues方法就是做这件事的：
+~~~
+let settingsAsStrings = settings.mapValues { setting -> String in
+	switch setting {
+	case .text(let text): return text
+	case .int(let number): return String(number)
+	case .bool(let value): return String(value)
+	}
+}
+
+settingsAsStrings // ["Name": "Jane's iPhone", "AirPlane Mode": "false"]
+~~~
+
+### Hashable要求
+字典其实就是哈希表。字典通过键的hashValue来为每个键在其底层作为存储的数组上指定一个位置。这也是Dictionary要求它的key类型需要遵守Hashable协议的原因。
+
+标准库中的所有基本数据类型都是遵守Hashable协议的，它们包括字符串，整数，浮点数以及布尔值。另外，像是数组，集合和可选值这些类型，如果它们的元素都是可哈希的，那么它们自动成为可哈希的。
+
+在很多情况下，编译器可以生成Hashable的实现，即使它不适用于某个特定的类型，标准库也带有让自定义类型可以挂钩的内置哈希函数。
+
+对于枚举和结构体，只要它们是由可哈希的类型组成，那么Swift就可以帮我们自动合成Hashable协议所需要的实现。如果一个结构体的所有存储属性都是可哈希的，那么我们不用手动实现Hashable协议，结构体已经实现这个协议了。类似的，只要枚举包含可哈希的关联值，那么就可以自动实现了协议；对于那些没有关联值的枚举，甚至都不用显示声明要实现的Hashable协议。这不仅可以节省一开始实现的工作量，还可以在添加或者删除属性时自动更新实现。
+
+如果不能利用自动Hashable合成(要么在实现一个类，要么处于哈希的目的，在自定义结构体中有几个属性需要被忽略)，那么首先需要让类型实现Equatable协议，然后可以实现hash(into:)方法来满足Hashable协议。这个方法接受一个Hasher类型参数，这个类型封装了一个通用的哈希函数，并在使用者向其提供数据时，捕获哈希函数的状态。它有一个接受任何可哈希值的combine方法。你应该通过调用combine方法的方式将类型的所有基本组件逐个传递给hasher。基本组件是那些构成类型实质的属性，你通常会想要排除那些可以被惰性重建的临时属性。
+
+你应该使用相同的基本组件来进行相等性检查，因为必须遵循以下不变的原则：两个同样的实例(有你实现的==定义相同),必须拥有相同的哈希值。不过反过来不必为真：两个相同哈希值的实例不一定需要相等。不通哈希值的数量是有限的，然后很多可以被哈希的类型（比如字符串）的个数是无限的。
+> 标准库的通用哈希函数使用一个随机种子作为其输入之一。也就是说，字符串"abc"的哈希值在每次程序执行时都会是不通的。随机种子是一种用来防止有针对性的哈希洪泛式拒绝服务攻击的安全措施。因为字典和集合是按照存储在哈希表中的顺序来迭代它们的元素，并且由于这个顺序是由哈希值决定的，所以这意味着相同的代码在每次执行时会产生不同的迭代顺序。如果需要哈希值每次都一样，例如为了测试，那么可以通过设置环境变量SWIFT_DETERMINISTIC_HASHING=1来禁用随机种子，但是你不应该在正式环境中这么做。
+
+当使用不具有值语义的类型（比如可变的对象）作为字典的键时，需要特别小心。如果你在将一个对象作为字典后，改变了它的内容，它的哈希值和/或相等特性往往也会发生改变。这个时候你将无法在字典中找到它。这时字典会在错误的位置存储对象，这将导致字典内部存储的错误。对于值类型来说，因为字典中的键不会和复制的值共用存储，因此它也不会被外部改变，所以不存在这个问题。
+
+## Set
+
+通过哈希表实现的，集合中的元素也必须满足Hashable。Set遵守ExpressibleByArrayLiteral协议，也就是说，可以用数组字面量的方式初始化一个集合:
+~~~
+let naturals: Set = [1, 2, 3, 2]
+~~~
+
+### 集合代数
+
+补集：
+~~~
+let iPods: Set = ["iPod touch", "iPod nano", "iPod mini", "iPod shuffle", "iPod Classic"]
+let discontinuedIPods: Set = ["iPod mini", "iPod Classic", "iPod nano", "iPod shuffle"]
+let currentIPods = iPods.subtracting(discontinuedIPods) // ["iPod touch"]
+~~~
+
+交集：
+~~~
+let touchscreen: Set = ["iPhone", "iPad", "iPod touch", "iPod nano"] 
+let iPodsWithTouch = iPods.intersection(touchscreen)
+// ["iPod nano", "iPod touch"]
+~~~
+
+并集：
+~~~
+var discontinued: Set = ["iBook", "Powerbook", "Power Mac"] discontinued.formUnion(discontinuedIPods)
+discontinued
+/*
+["iPod shuffle", "iBook", "iPod Classic", "Powerbook", "iPod mini", "iPod nano", "Power Mac"]
+*/
+~~~
+
+这里使用可变版本的formUnion来改变原来的集合（正因如此，我们需要将原来的集合用var声明）。几乎所有的集合操作都有可变以及不可变版本的形式，前一种都以form开头。
+
+### 索引集合和字符集合
+
+Set和OptionSet是标准库中唯一实现了SetAlgebra的类型，但是这个协议在Foundation中还被另外两个很有意思的类型实现了：IndexSet和CharacterSet。
+
+IndexSet表示了一个由正整数组成的集合。当然你可以用Set<Int>来做这件事，但是IndexSet更加高效，因为它内部使用了一组范围列表进行实现。打个比方，现在你有一个含有1000个元素的table view，你想要一个集合来管理已经被用户选中的元素的索引。使用Set<Int>的话，根据选中的个数不同，最多可能会要存储1000个元素。而IndexSet不太一样，它会存储连续的范围，也就是说，在选取前500行的情况下，IndexSet里其实只存储了选择的首位和末位两个整数值。
+
+同样地，CharacterSet是一个高效的存储Unicode编码点的集合，经常用来检查一个特定字符串是否只包含某个字符子集。
+
+### 在闭包中使用集合
+
+想要为Sequnce写一个扩展，来获取序列中所有的唯一元素，我们只需要将这些元素放到一个Set里，然后返回这个集合的内容就行了。不过，因为集合并没有定义顺序，所以这么做是不稳定的，输入的元素的顺序在结果中可能会不一致。为了解决这个问题，我们可以创建一个扩展来解决这个问题，在扩展方法内部我们还是使用Set来验证唯一性：
+~~~
+extension Sequence where Element: Hashable {
+	func unique() -> [Element] {
+		var seen: Set<Element> = []
+		return filter { element in
+			if seen.contains(element)
+			return false
+		} else {
+			seen.insert(element)
+			return true
+		}
+	}
+}
+
+[1,2,3,12,1,3,4,5,6,4,6].unique() // [1, 2, 3, 12, 4, 5, 6]
+~~~
+
+上面这个方法让我们可以找到序列中的所有不重复的元素，并且通过元素必须满足Hashable这个约束来维持它们原来的顺序。
+
+## Range
+
+范围代表的是两个值的区间，它由上下边界进行定义。你可以通过..<来创建一个不包含上边界的半开范围，或者使用...创建同时包含上下边界的闭合范围:
+
+~~~
+// 0 到 9, 不包含 10
+let singleDigitNumbers = 0..<10
+Array(singleDigitNumbers) // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] //包含"z"
+let lowercaseLetters = Character("a")...Character("z")
+~~~
+
+这些操作符还有一些前缀和后缀的变型版本，用来表示单边的范围：
+~~~
+let fromZero = 0...
+let upToZ = ..<Character("z")
+~~~
+
+一共有五种不同的具体类型可以用来表示范围，每种类型都代表了对值的不同的约束。最常用的两种类型是Rang(由..<创建的半开范围)和ClosedRange(由...创建的闭合范围)。两者都有一个Bound的泛型参数：对于Bound的唯一要求是它必须遵守Comparable协议。
+
+对范围最基本的操作都是检测它是否包含了某些元素：
+~~~
+singleDigitNumbers.contains(9) // true 
+lowercaseLetters.overlaps("c"..<"f") // true
+~~~
+
+半开范围和闭合范围各有所用：
+- 只有半开范围能表达空间隔(也就是下界和上界相等的情况， 比如5..<5)
+- 只有闭合范围能包括其元素类型能表达的最大值(比如0..int.max)。而半开范围则要求范围上界是一个比自身所包含的最大值还要大1的值。
+
+
+### 可数范围
+
+范围看起来很自然地会是一个序列或者集合类型。并且确实可以遍历一个整数范围，或者像集合类型那样对它：
+~~~
+for i in 0..<10 {
+print("\(i)", terminator: " ")
+} // 0 1 2 3 4 5 6 7 8 9
+singleDigitNumbers.last // Optional(9)
+~~~
+
+但并不是所有的范围都可以使用这种方式。比如，编译器不允许我们遍历一个Charactrer的范围：
+~~~
+// 错误:'Character' 类型没有实现 'Strideable' 协议。 
+for c in lowercaseLetters {
+	...
+}
+
+~~~
+
+这是怎么回事呢？让Range满足集合类型协议是有条件的，条件是它的元素需要满足Strideable协议(你可以通过增加偏移来从一个元素移动到另一个)，并且步长(stride step)是整数：
+~~~
+extension Range: Sequence
+	where Bound: Strideable, Bound.Stride: SignedInteger { /* ... */ }
+extension Range: Collection, BidirectionalCollection, RandomAccessCollection
+	where 
+~~~
+
+换句话说，为了能遍历范围，它必须是可数的。对于可数范围（满足了那些约束），因为对于Stride有整数类型这样一个约束，所以有效的边界包括整数和指针类型，但不能是浮点数类型。
+
+### 范围表达式
+
+所有这五种范围都满足RangeExpression协议。这个协议内容很简单，首先，它允许我们询问某个元素是否被包含在该范围中。其次，给定一个集合类型，它能够计算出表达式所指定的完整的Range：
+~~~
+public protocol RangeExpression {
+	associatedtype Bound: Comparable
+	func contains(_ element: Bound) -> Bool 
+	func relative<C>(to collection: C) -> Range<Bound>
+		where C: Collection, Self.Bound == C.Index }
+~~~
+
+对于下界缺失的部分范围，relative(to:)方法会把集合类型的startIndex作为范围下界。对于上界缺失的部分范围，同样，它会使用endIndex作为上界。
+
+~~~
+let arr = [1,2,3,4] 
+arr[2...] // [3, 4] 
+arr[..<1] // [1] 
+arr[1...2] // [2, 3]
+~~~
+
+这种写法能够正常工作，是因为Collection协议里对应的下标操作符声明中，所接收的是一个实现了RangeExpression的类型，而不是上述五个具体的范围类型中的某一个。你甚至还可以将两个边界都省略掉，这样将会得到表示整个集合的一个切片：
+~~~
+arr[...] // [1, 2, 3, 4] 
+type(of: arr) // Array<Int>
+
+~~~
+
+## 哨岗值
+
+函数调用中返回一个"魔法"数来表示其并没有返回真实的值，这样的值被称为哨岗值。
+
+### 通过枚举解决魔法数的问题
+
+Swift在枚举中引入了"关联值"的概念。也就是说，枚举可以在它们的成员中包含另外的关联值。
+
+~~~
+extension Collection where Element: Equatable {
+	func firstIndex(of element: Element) -> Optional<Index> {
+		var idx = startIndex
+		while idx != endIndex {
+			if self[idx] == element {
+				return .some(idx)
+			}
+			formIndex(after: &idx)
+		}
+		// 没有找到，返回.none
+		return .none
+	}
+
+}
+~~~
+
+现在，用户就不会在没有检查的情况下，错误地使用一个值了:
+~~~
+var array = ["one", "two", "three"]
+let idx = array.firstIndex(of: "four")
+// 编译错误:remove(at:) 接受 Int，而不是 Optional<Int>。
+ array.remove(at: idx)
+~~~
+
+相反，假设得到的结果不是.none,为了使用包装在可选值中的索引，你必须对其进行"解包":
+~~~
+var array = ["one","two","three"] 
+switch array.firstIndex(of: "four") {
+	case .some(let idx): 
+		array.remove(at: idx)
+	case .none:
+		break // 什么都不做
+}
+
+~~~
+
