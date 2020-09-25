@@ -556,3 +556,131 @@ switch array.firstIndex(of: "four") {
 
 ~~~
 
+## 可选值概览
+
+### if let
+
+使用if let 来进行可选值绑定(optional binding)要比上面使用switch语句要稍微好一些。if let语句会检查可选值是否为nil，如果不是nil，便会解包可选值。
+
+你可以把布尔限定语句与if let搭配在一起使用。因此，如果要实现"查找到的位置是数组的第一个元素，就不删除它"这样的逻辑，可以这样：
+~~~
+if let idx = array.firstIndex(of: "four"),idx != array.startIndex {
+	array.remove(at: idx)
+}
+~~~
+
+你也可以在同一个if语句中绑定多个值。更赞的是，在后面的绑定中可以使用之前成功解包出来的结果。当你要连续调用多个返回可选值的函数时，这个功能就特别有用了。
+
+### while let
+
+while let 语句和if let 非常相似，它表示当一个条件返回nil时便终止循环。
+
+标准库中的readLine函数从标准输入中读取内容，并返回一个可选字符串。当到达输入末尾时，这个函数将返回nil。所以，你可以使用while let 来实现一个非常基础的和Unix中cat 命令等价的功能：
+~~~
+while let line = readLine() {
+	print(line)
+}
+~~~
+
+和 if let 一样，你可以在可选绑定后面添加一个布尔值语句。如果你想要在EOF或者空行的时候终止循环的话，只需要加一个判断空字符串的语句就行了。要注意，一旦条件为false，循环就会停止
+
+~~~
+while let line = readLine(), !line.isEmpty {
+	print(line)
+}
+~~~
+
+where关键字
+
+~~~
+for i 0..<10 where i%2 == 0 {
+	print(i, teminator: "")
+} // 0 2 4 6 8
+~~~
+
+注意上面的where语句和while循环中的布尔语句工作方式有所不同。在while循环中，一旦值为false时，迭代就将停止。而在for循环中，它的工作方式和filter相似了。如果我们将上面的for循环用while重写的话，看起来是这样的：
+~~~
+var iterator2 = (0..<10).makeIterator()
+while let i = iterator2.next() {
+	guard i%2 == 0 else { continue }
+	print(i)
+}
+~~~
+
+### 双重可选值
+
+一个可选值的包装类型也是一个可选值的情况，会导致可选值的嵌套。
+
+~~~
+let stringNumbers = ["1", "2", "three"]
+let maybeInts = stringNumbers.map { Int($0) } // [Optional(1), Optional(2), nil]
+~~~
+
+现在得到一个元素类型为Optional<Int>(也就是Int？)的数组，这是因为Int.init(String)是可能失败的，只要字符串无法转换成整数。
+
+于是，当使用for遍历maybeInts的时候，自然访问到的每个元素都是Int？了：
+~~~
+for maybeInt in maybeInts {
+	//maybeInt 是一个Int？值
+	//得到两个整数值和一个nil
+}
+~~~
+
+由于next方法会把序列中的每个元素包装成可选值，所以iterator.next()函数返回的其实是一个Optional<Optional<Int>>值，或者说是一个Int？？。而while let 会解包并检查这个值是不是nil，如果不是，则绑定解包的值并运行循环体部分：
+~~~
+var iterator = maybeInts.makeIterator()
+while let maybeInt = iterator.next() {
+	print(maybeInt,terminator: " ")
+}
+// Optional(1) Optional(2) nil
+~~~
+
+当循环到达最后一个值，也就是从"three"转换而来的nil时，从next返回的其实是一个非nil的值，这个值是.some(nil)。while let将这个值解包，并将解包结果(也就是nil)来绑定到maybeInt上。如果没有嵌套可选值的话，这个操作将无法完成。
+
+如果想对非nil的值做for循环的话，可以使用case来进行模式匹配：
+~~~
+for case let i? in maybeInts {
+	//i 将是Int值， 而不是Int？
+	print(i, terminator: " ")
+}
+// 1 2
+
+//或者只对nil进行循环
+for case nil in maybeInts {
+	// 将对每个nil执行一次
+	print("No value")
+}
+~~~
+
+这里使用了x？这个模式，它只会匹配那些非nil的值，这个语法是.some(x)的简写形式，所以该循环还可以被写成:
+~~~
+for case let .some(i) in maybeInts {
+	print(i)
+}
+~~~
+
+基于case的模式匹配可以让我们把在switch的匹配中用到的规则同样应用到if，for和while上去。最有用的场景是结合可选值，但是也有一些其他的使用方式，比如：
+
+~~~
+let j = 5
+if case 0..<10 = j {
+	print("\(j)在范围内")
+} //5在范围内
+~~~
+
+### if var and while var
+
+除了let以外，你还可以使用var来搭配if、while和for。这让你可以在语句块中改变变量：
+~~~
+let number = "1"
+if var i = Int(number) {
+	i += 1
+	print(i)
+} // 2
+~~~
+
+不过注意，i会是一个本地的复制。任何对i的改变将不会影响到原来的可选值。可选值是值类型，解包一个可选值做的事情是将它里面的值复制出来。
+
+### 解包后可选值的作用域
+
+

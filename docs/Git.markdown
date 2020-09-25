@@ -47,3 +47,37 @@ git config --list
 
 更新远端分支
 > git remote update origin --prune  
+
+
+## git 上传大文件
+
+>brew install git-lfs
+
+具体就是安装git-lfs，先下载，然后就是一顿操作：
+
+2-1. 安装，我是用的是Macbook Pro，所以选择macOS用户安装方式 Homebrew 安装
+brew install git-lfs
+2-2. 打开终端，cd到git仓库本地路径，初始化lfs
+git lfs install
+2-3. 追踪单个文件
+git lfs track
+eg:git lfs track "*.psd"
+2-4. 添加lfs追踪文件，提交仓库（此处一定要先提交追踪文件到仓库，在提交其他文件）
+git add .gitattributes
+git commit -m "track *.psd files using Git LFS"
+git add .
+git commit -m "submit other files"
+2-5. 验证是否追踪大文件，如果输入后不显示则追踪不成功
+git lfs ls-files
+2-6. 推送至远程仓库
+git push origin master
+
+
+打tag
+git tag 0.1.1
+git push --tags
+git push origin v1.5
+
+删
+本地 git tag -d 0.0.1
+远端 git push origin :refs/tags/0.1.2
