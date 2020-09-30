@@ -48,6 +48,11 @@ git config --list
 更新远端分支
 > git remote update origin --prune  
 
+删除与tag重名时的分支，需要指定路径
+>git push origin :refs/heads/1.1.1
+
+>git push origin :refs/tags/1.1.1
+
 
 ## git 上传大文件
 

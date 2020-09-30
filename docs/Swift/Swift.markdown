@@ -683,4 +683,343 @@ if var i = Int(number) {
 
 ### 解包后可选值的作用域
 
+在Objective-C中，对nil发消息什么都不会发生。Swift里，我们可以通过"可选链"来达到同样的效果:
+> delegate?.callback()
+
+~~~
+let dictOfFunctions:[String:(Int, Int) -> Int] = [
+	"add":(+),
+	"subtract":(-)
+] 
+
+dictOfFunctions["add"]?(1, 1) //Optional(2)
+
+
+var a:Int? = 5
+a? = 10
+a //Optional(10)
+
+var b:Int? = nil
+b? = 10
+b //nil
+~~~
+
+#### nil合并运算符
+
+很多时候，你都会想在解包可选值的同时，为nil的情况设置一个默认值。而这正是nil合并运算符的功能：
+~~~
+let stringteger = "1"
+let number = Int(stringeger) ?? 0
+~~~
+
+如果字符串可以被转换为一个整数的话，number将会是那个解包后的整数值。如果不能的话，Int.init将返回nil，默认值0会被用来赋值给number。也就是说lhs ?? rhs做的事情类似于这样的代码lhs != nil ? lhs! : rhs。
+
+> array.first ?? 0 // 1
+
+这个解决方法漂亮且清晰，"从数组中获取第一个元素"这个意图被放在最前面，之后是通过??操作符连接的使用默认值的语句，它代表"这是一个默认值"。
+
+~~~
+extension Array {
+	subscript(guarded idx: Int) -> Element? {
+		guard (startInex..<endIndex).conteains(idx) else {
+			return nil
+		}
+
+		return self[idx]
+	}
+}
+
+array.count > 5 ? array[5] : 0
+
+array[guarded: 5] ?? 0
+~~~
+
+#### 在字符串插值中使用可选值
+
+Swift的?? 运算符不支持这种类型不匹配的操作，确实，它无法决定当表达式两侧不共享同样的基础类型时，到底应该使用哪一个类型。不过，只是为了在字符串插值中使用可选值这一特殊目的的话，添加一个我们自己的运算符也很简单。
+
+~~~
+infix operator ???: NilCoalescingPrecedence
+
+public func ???<T>(optional: T?, defaultValue: @autoclosure () -> String) -> String
+{
+	switch optional {
+		case let value?: return String(describing: value)
+		case nil: return defaultValue()
+	}
+}
+~~~
+
+这个函数接受左侧的可选值T?和右侧的字符串。如果可选值不是nil，我们将它解包，然后返回它的字符串描述。否则，我们将传入的默认支付串返回。@autoclosure标注确保了只有当需要的时候，我们才会对第二个表达式进行求值。
+
+> print("Body temperature: \(bodyTemperature ??? "n/a")") // Body temperature: 37.0
+
+#### 可选值map
+
+假设，我们要把第一个字符数组的第一个元素来转换成字符串:
+
+~~~
+let characters:[Character] = ["a", "b", "c"]
+String(characters[0]) // a
+
+extension Optional {
+	func map<U>(transform:(Wrapped) -> U) -> U? {
+		guard let value = self else {return nil}
+		return transform(value)
+	}
+}
+~~~
+
+当你想要的就是一个可选值结果时，Optional.map就非常有用。假设你要为数组实现一个变种的reduce方法，这个方法不接受初始值，而是直接使用数组中的首个元素作为初始值(在一些语言中，这个函数可能被叫做reduce1，但是Swift里我们有重载，所以也将它叫做reduce就行了)。
+因为数组可能会是空的，这种情况下没有初始值，结果只能是可选值，因为可选值为nil时，可选值map也会返回nil，所以我们可以不使用guard，而就用一个return来重写我们的这个reduce:
+~~~
+extension Array {
+	func reduce_alt(_ nextPartialResult: (Element, Element) -> Element) -> Element? {
+		return first.map {
+			dropFirst().reduce($0.nextPartialResult)
+		}
+	}
+}
+~~~
+
+#### 可选值flatMap
+
+如果你对一个可选值调用map，但是你的转换函数本身也返回可选值的话，最终结果将是一个双重嵌套的可选值。举个例子，比如你想要获取数组的第一个字符串元素，并将它转换为数字。首先你使用数组上的first，然后用map将它转换为数字：
+
+~~~
+let stringNumber = ["1", "2", "3", "foo"]
+let x = stringNumbers.first.map{ Int($0) } //Optional(Optional(1))
+~~~
+
+问题在于，map返回可选值(因为firs可能会是nil)，并且Int(String)也返回可选值(字符串可能不是一个整数)，最后x的结果将会是Int??。
+
+flatMap可以把结果展评为单个可选值。这样一来，y的类型将会是Int？：
+> let y = stringNumbers.first.flatMap{ Int($0) } //Optional(1)
+
+~~~
+extension Optional {
+	func flatMap<U>(transform: (Wrapped) -> U?) ->U? {
+		if let value = self, let transformed = transform(value) {
+			return transformed
+		}
+
+		return nil
+	}
+}
+~~~
+
+#### 使用compactMap过滤nil
+
+如果你的序列中包含可选值，可能你只会对那些非nil值感兴趣。实际上，你可能只想忽略掉它们。 设想在一个字符串数组中你只想要处理数字。在for循环中，用可选值模式匹配可以很简单地就实现：
+~~~
+let numbers = ["1", "2", "3", "foo"]
+var sum = 0 
+for case let i? in numbers.map({Int($0)}) {
+	sum += i
+}
+
+sum //6
+~~~
+
+实际上，你想要的版本应该是一个可以将那些nil过滤出去并将非nil值进行解包的map。标准库中序列的compactMap正是你想要的：
+> numbers.compactMap{ Int($0)}.refuce(0, +) // 6
+
+为了实现我们自己compactMap，先转换整个数组，然后过滤出非nil值，最后解包每个被过滤出来的元素：
+~~~
+extension Sequence {
+	func compactMap<B>(_ transform:(Element) -> B?) -> [B] {
+		return lazy.map(transform).filter {$0 != nil}.map{$0!}
+	}
+}
+~~~
+
+在这个实现中，使用了lazy来将数组的实际创建推迟到了使用前的最后一刻。这可能只是一个小的优化，但在处理较大的序列时还是值得的。使用lazy可以避免多个作为中间结果的数组的内存分配。
+
+#### 可选值判等
+
+首先，只有当Wrapped类型实现了Equatable协议，那么Optional才会也实现Equatable协议：
+~~~
+extension Optional: Equatable where Wrapped: Equatable {
+	static func ==(lhs: Wrapped?, rhs: Wrapped?) -> Bool {
+		switch (lhs, rhs) {
+			case (nil, nil): return true
+			case let(x?, y?): return x==y
+			case (_?, nil),(nil, _?): return false
+		}
+	}
+}
+~~~
+
+Swift代码也一直依赖这个隐式转换。例如，使用键作为下标在字典中查找时，因为键有可能不存在，所以返回值是可选值。对于用下标读取和写入时，所需要的类型是相同的。也就是说，在使用下标进行赋值时，我们其实需要传入一个可选值。
+
+附带提一句，如果你想知道当使用下标操作为字典的某个键赋值nil会发生什么的话，答案就是这个键会从字典中移除。有时候这会很有用，但是这也意味着你在使用字典存储可选值类型时需要小心一些:
+
+~~~
+var dictWithNils: [String: Int?] = [
+	"one": 1,
+	"two": 2,
+	"none": nil
+]
+
+dictWithNils["two"] = nil
+dictWithNils // ["one": Optional(1), "none": nil]
+
+~~~
+
+它会把"two这个键移除。
+
+为了改变这个键的值，你可以使用下面中的任意一个。它们都可以正常工作:
+
+~~~
+dictWithNils["two"] = Optional(nil) 
+dictWithNils["two"] = .some(nil) 
+dictWithNils["two"]? = nil
+
+dictWithNils // ["one": Optional(1), "none": nil, "two": nil]
+~~~
+
+### 强制解包的时机
+
+当你能确定你的某个值不可能是nil时可以使用感叹号，你应当会希望如果它意外是nil的话，程序应当直接挂掉。
+
+下面这段代码会根据特定的条件从字典中找到满足这个条件的值所对应的所有的键:
+~~~
+let ages = [
+	"Tim": 53, "Angela": 54, "Craig":44, "Jony": 47, "Chris": 37, "Michael": 34,
+]
+
+ages.keys
+	.filter { name in ages[name]! < 50 }
+	.sorted()
+
+// ["Chris", "Craig", "Jony", "Michael"]
+~~~
+同样，这里使用 ! 是非常安全的 — 因为所有的键都来源于字典，所以在字典中找不到这个键是 不可能的。
+
+不过你也可以通过一些手段重写这几句代码，来把强制解包移除掉。利用字典本身是一个键值 对的序列这一特性，你可以对序列先进行过滤，然后再通过映射来返回键的序列:
+~~~
+ages.filter { (_, age) in age < 50 } .map { (name, _) in name } .sorted()
+// ["Chris", "Craig", "Jony", "Michael"]
+
+~~~
+
+#### 改进强制解包的错误信息
+
+其实，你可能会留一个注释来提醒为什么这里要使用强制解包。那为什么不把这个注释直接作 为错误信息呢?这里我们加了一个 !! 操作符，它将强制解包和一个更具有描述性质的错误信息 结合在一起，当程序意外退出时，这个信息也会被打印出来:
+
+~~~
+infix operator !!
+
+func !!<T>(wrapped: T?, failureText: @autoclosure () => String) -> T {
+	if let x = wrapped { return x }
+	fatalError(failureText())
+}
+~~~
+
+现在你可以写出更能描述问题的错误信息了，它还包括了你期望的被解包的值:
+
+~~~
+let s = "foo"
+let i = Int(s) !! "Expecting integer, got \"\(s)\""
+~~~
+
+#### 在调试版本中进行断言
+
+说实话，选择在发布版中让应用崩溃还是很大胆的行为。通常，你可能会选择在调试版本或者测试版本中进行断言，让程序崩溃，但是在最终产品中，你可能会把它替换成像是零或者空数组这样的默认值。
+
+我们可以实现一个疑问感叹号 !? 操作符来代表这个行为。我们将这个操作符定义为对失败的解 包进行断言，并且在断言不触发的发布版本中将值替换为默认值
+
+~~~
+infix operator !?
+
+func !?<T: ExpressibleByIntegerLiteral>(wrapped: T?,failureText:@autoclosure() -> String) -> T 
+{
+	assert(wrapped != nil, failureText())
+	return wrapped ?? 0
+}
+~~~
+
+现在，下面的代码将在调试时触发断言，但在发布版本中打印 0:
+
+~~~
+let s = "20"
+let i = Int(s) !? "Expectiong integer, got \"\(s)\""
+~~~
+
+对其他字面量转换协议进行重载，可以覆盖不少能够有默认值的类型:
+
+~~~
+func !?<T: ExpressibleByArrayLiteral>(wrapped: T?, failureText: @autoclosure () -> String) -> T
+{
+	assert(wrapped != nil, failureText()) 
+	return wrapped ?? []
+}
+
+func !?<T: ExpressibleByStringLiteral>(wrapped: T?, failureText: @autoclosure () -> String) -> T
+{
+	assert(wrapped != nil, failureText()) return wrapped ?? ""
+}
+
+~~~
+
+如果你想要显式地提供一个不同的默认值，或者是为非标准的类型提供这个操作符，我们可以定义一个接受元组为参数的版本，元组包含默认值和错误信息:
+
+~~~
+func !?<T>(wrapped: T?, nilDefault: @autoclosure () -> (value: T, text: String)) -> T
+{
+	assert(wrapped != nil, nilDefault().text) return wrapped ?? nilDefault().value
+}
+
+// 调试版本中断言，发布版本中返回 5 
+Int(s) !? (5, "Expected integer")
+~~~
+
+因为对于返回Void的函数，使用可选链进行调用时将返回Void？，所以利用这一点，你也可以写一个非泛型的版本来检测一个可选链调用碰到nil，且无操作的情况：
+~~~
+
+func !?(wrapped: ()?, failureText: @autoclosure () -> String) { 
+	assert(wrapped != nil, failureText())
+}
+
+var output: String? = nil
+output?.write("something") !? "Wasn't expecting chained nil here"
+
+~~~
+
+> 想要挂起一个操作我们有三种方式。首先，fatalError 将接受一条信息，并且无条件 地停止操作。第二种选择，使用 assert 来检查条件，当条件结果为 false 时，停止执 行并输出信息。在发布版本中，assert 会被移除掉，也就是说条件不会被检测，操作也永远不会挂起。第三种方式是使用 precondition，它和 assert 有一样的接口，但是 在发布版本中不会被移除，也就是说，只要条件被判定为 false，执行就会被停止。
+
+### 隐式解包可选值
+
+当可选值 是 nil 的时候强制解包会造成应用崩溃，那你到底为什么会要用到隐式可选值呢?好吧，实际上 有两个原因:
+
+原因 1:暂时来说，你可能还需要到 Objective-C 里去调用那些没有检查返回是否存在的代码; 或者你会调用一个没有针对 Swift 做注解的 C 语言的库。
+
+隐式解包可选值还存在的唯一原因其实是为了能更容易地和 Objective-C 与 C 一起使用
+
+原因 2:因为一个值只是很短暂地为 nil，在一段时间后，它就再也不会是 nil。
+最常见的情况就是两阶段初始化 (two-phase initialization)。当你的类准备好被使用时，所有 的隐式解包可选值都将有一个值。这就是 Xcode 和 Interface Builder 在 view controller 的生 命周期中使用它们的方式:在 Cocoa 和 Cocoa Touch 中，view controller 会延时创建他们的 view，所以在 view controller 自身已经被初始化，但是它的 view 还没有被加载的这段时间窗 口内，view 的对象的 outlet 引用还没有被创建。
+
+#### 隐式可选值行为
+
+虽然隐式解包的可选值在行为上就好像是非可选值一样，不过你依然可以对它们使用可选链， nil 合并，if let，map 或者将它们与 nil 比较，所有的这些操作都是一样的:
+~~~
+var s: String! = "Hello" 
+s?.isEmpty // Optional(false) 
+if let s = s { print(s) } // Hello 
+s=nil
+s ?? "Goodbye" // Goodbye
+~~~
+
+## 函数
+
+要理解Swift中的函数和闭包，你需要切实弄明白三件事:
+1、函数可以像Int或者String那样被赋值给变量，也可以作为另一个函数的输入参数，或者另一个函数的返回值来使用
+2、函数能够捕获存在于其局部作用之外的变量
+3、有两种方法可以创建函数，一种是使用func关键字，另一种是{}.在Swift中，后一种被称为闭包表达式。
+
+
+### 函数可以被赋值给变量，也能够作为函数的输入和输出
+
+为什么函数可以作为变量使用的这种能力如此关键呢？因为它让你很容易写出"高阶"函数，高阶函数将函数作为参数的能力使得它们在很多方面都非常有用。
+
 
