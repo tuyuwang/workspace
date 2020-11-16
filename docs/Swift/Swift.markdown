@@ -1022,4 +1022,228 @@ s ?? "Goodbye" // Goodbye
 
 为什么函数可以作为变量使用的这种能力如此关键呢？因为它让你很容易写出"高阶"函数，高阶函数将函数作为参数的能力使得它们在很多方面都非常有用。
 
+### 函数可以捕获存在于它们作用域之外的变量
 
+当函数引用了在其作用域之外的变量时，这个变量就被捕获了，它们将继续存在，而不是在超过作用域后被摧毁。
+
+每次调用这个函数时，计数器将会增加：
+~~~
+func counterFunc() -> (Int) -> String { 
+	var counter = 0
+	func innerFunc(i: Int) -> String {
+		counter += i // counter 被捕获
+		return "Running total: \(counter)" }
+	return innerFunc 
+}
+~~~
+
+一般来说，因为counter是counterFunc的局部变量，它在return语句执行之后就应该离开作用域并被摧毁。但因为innerFunc捕获了它，所以Swift运行时将一直保证它的存在，直到捕获它的函数被销毁为止。
+
+~~~
+let f = counterFunc()
+f(3) // Running total: 3
+f(4) // Running total: 7
+~~~
+
+如果我们再次调用counterFunc()函数，将会生成并捕获一个新的counter变量:
+~~~
+let g = counterFunc() 
+g(2) // Running total: 
+2 g(2) // Running total: 4
+~~~
+
+你可以将这些函数以及它们所捕获的变量想象为一个类的实例，这个类拥有一个单一的方法(也就是这里的函数)以及一些成员变量(这里的被捕获的变量)。
+
+在编程术语里，一个函数和它所捕获的变量环境组合起来称为闭包。上面f和g都是闭包的例子，因为它们捕获并使用了一个在它们作用域之外的非局部变量counter。
+
+### 函数可以使用{}来声明为闭包表达式
+
+在Swift中，定义函数的方法有两种。一种是使用func关键字。另一种方式是使用闭包表达式。
+
+~~~
+func doubler(i:Int) -> Int {
+	return i * 2
+}
+
+[1, 2, 3, 4].map(doublerAlt) // [2, 4, 6, 8]
+~~~
+
+使用闭包表达式的语法来写相同的函数，像之前那样将它传给map:
+
+~~~
+let doublerAlt = { (i: Int) -> Int in return i*2 }
+[1, 2, 3, 4].map(doublerAlt) // [2,4,6,8]
+~~~
+
+使用闭包表达式来定义的函数可以被想成函数的字面量，就像1是整数字面量，"hello"是字符串字面量那样。与func相比，它的区别在于闭包表达式是匿名的，它们没有被赋予一个名字。使用它们的方式只能是在它们被创建时将其赋值给一个变量，或者是将它们传递给另一个函数或方法。
+
+其实还有第三种使用匿名函数的方法: 你可以在定义一个表达式的同时，对它进行调用。这个方法在定义那些初始化代码多于一行的属性时会很有用
+
+Swift中的可以让代码更加简洁的特性：
+
+- 如果你将闭包作为参数传递，并且你不再使用这个闭包做其他事情的话，就没有必要先将它存储到一个局部变量中。可以想象一下比如5*i这样的数值表达式，你可以把它直接传递给一个接受Int的函数，而不必先将它计算并存储到变量里。
+- 如果编译器可以从上下文中推断出类型的话，你就不需要指明它了。
+- 如果闭包表达式的主体部分只包括一个单一的表达式的话，它将自动返回这个表达式的结果，你可以不写return，
+- Swift会自动为函数的参数提供简写形式，$0代表第一个参数，$1代表第二个参数，以此类推。
+- 如果函数的最后一个函数是闭包表达式的话，你可以将这个闭包表达式移动函数调用的圆括号的外部。这样的尾随闭包语法在多行闭包表达式中表现非常好，因为它看起来更接近于装配了一个普通的函数定义，或者是像if(expr) {} 这样的执行块的表达形式。
+- 如果一个函数除了闭包表达式外没有别的参数，那么调用的时候在方法名后面圆括号也可以一并省略。
+
+~~~
+[1, 2, 3].map( { (i: Int) -> Int in return i * 2 } ) [1, 2, 3].map( { i in return i * 2 } )
+[1, 2, 3].map( { i in i * 2 } )
+[1, 2, 3].map( { $0 * 2 } )
+[1, 2, 3].map() { $0 * 2 } 
+[1,2,3].map{$0*2}
+~~~
+
+如果你在尝试提供闭包表达式时遇到一些谜一样的错误的话，将闭包表达式写成上面的例子中第一种包括类型的完整形式，往往是个好主意。
+
+还有一些时候，Swift会要求你用更明确的方式进行调用。假设你要得到一个随机数数组，一种快读的方法就是通过Range.map方法，并在map的函数中生成并返回随机数。这里，无论如何你都要为map的函数提供一个参数。或者明确使用_告诉编译器你承认这里有一个参数，但并不关心它究竟是什么:
+~~~
+(0..<3).map{_ in Int.random(in: 1..<100)} //[53,63,88]
+~~~
+
+#### 函数的灵活性
+
+我们从定义一个Person类型开始。因为我们想要展示Objective-C强大的运行时的工作方式，所以我们将它定义为NSObject的子类。我们将这个类标记为@objcMembers，这样它的所有成员都将在Objective-C中可见:
+
+~~~
+@objcMembers
+final class Persion: NSObject {
+	let first: String
+	let last: String
+	let yearOfBirth: Int
+	init(first: String, last: String, yearOfBirth: Int) {
+		self.first = first
+		self.last = last
+		self.yearOfBirth = yearOfBirth
+		//super.init() 在这里被隐式调用
+	}
+}
+~~~
+
+接下来我们定义一个数组，其中包含了不同名字和出生年份的人：
+~~~
+let people = [
+	Person(first: "Emily", last: "Young", yearOfBirth: 2002), 
+	Person(first: "David", last: "Gray", yearOfBirth: 1991), 
+	Person(first: "Robert", last: "Barnes", yearOfBirth: 1985), 
+	Person(first: "Ava", last: "Barnes", yearOfBirth: 2000), 
+	Person(first: "Joanne", last: "Miller", yearOfBirth: 1994), 
+	Person(first: "Ava", last: "Barnes", yearOfBirth: 1998),
+]
+~~~
+
+我们想要对着个数组进行排序，规则是先按照姓排序，再按照名排序，最后是出生年份。排序应该遵照用户的区域设置。我们可以使用NSSortDescriptor对象来描述如何排序对象， 通过它可以表达出各个排序标准(使用localizedStandardCompare来进行遵循区域设置的排序):
+~~~
+
+let lastDescriptor = NSSortDescriptor(key: #keyPath(Person.last), ascending:true,selector:#selector(NSString.localizedStandardCompare(_:)))
+let firstDescriptor = NSSortDescriptor(key: #keyPath(Person.first), ascending: true,
+selector: #selector(NSString.localizedStandardCompare(_:)))
+let yearDescriptor = NSSortDescriptor(key: #keyPath(Person.yearOfBirth), ascending: true)
+~~~
+
+要对数组进行排序，我们使用NSArray的sortedArray(using:)方法。这个方法可以接受一系列排序描述符。为了确定两个元素的顺序，它会先使用第一个描述符，并检查其结果。如果两个元素在第一个描述符下相同，那么它将使用第二个描述符，以此类推：
+~~~
+let descriptors = [lastDescriptor, firstDescriptor, yearDescriptor] (people as NSArray).sortedArray(using: descriptors)
+/*
+[Ava Barnes (1998), Ava Barnes (2000), Robert Barnes (1985),
+David Gray (1991), Joanne Miller (1994), Emily Young (2002)] */
+
+~~~
+
+排序描述符用到了Objective-C的两个运行时特性：首先，key是Objective-C的键路径，它其实是一个包含属性名称的链接。不要把它和Swift4引入的原生的(强类型的)键路径搞混。
+
+如何用Swift的sort来复制这个功能呢？要复制这个排序的部分功能是很简单的:
+~~~
+var strings = ["Hello", "hallo", "Hallo", "hello"]
+strings.sort { $0.localizedStandardCompare($1) == .orderedAscending }
+strings //["hallo", "Hallo", "hello", "Hello"]
+~~~
+
+如果只是想用对象的某一个属性进行排序的话，也很简单:
+~~~
+people.sorted { $0.yearOfBirth < $1.yearOfBirth }
+~~~
+
+要同时排序姓和名，我们可以用标准库的lexicographicallyPrecedes方法来进行实现。这个方法接受两个序列，并对它们执行一个电话簿方式的比较，也就是说，这个比较将顺次从两个序列中各取一个元素来进行比较，知道发现不相等的元素。所以，我们可以用姓和名构建两个数组，然后使用lexcicongraphicallyPrecedes来比较它们。我们还需要一个函数来执行这个比较，这里我们把使用了localizedStandardCompare的比较代码放到这个函数中:
+~~~
+people.sorted { p0, p1 in
+	let left = [p0.last, p0.first]
+	let right = [p1.last, p1.first]
+	return left.lexicographicallyPrecedes(right) {
+		$0.localizedStandardCompare($1) == .orderedAscending
+	}
+}
+~~~
+
+
+## 函数作为数据
+
+我们不会选择去写一个更复杂的函数来进行排序，先回头看看现状。排序描述符的方式要清晰不少，但是它用到了运行时编程。我们写的函数没有使用运行时编程，不过它们不太容易写出来或者读懂。
+
+除了把排序信息存储在类里，我们可以定义一个描述对象顺序的函数。其中，最简单的一种实现就是接受两个对象作为参数，并在它们顺序正确的时候，返回true。这个函数的类型正是标准库中sort(by:)和sorted(by:)的参数类型。接下来，让我们先定义一个泛型别名来表达这种函数形式的排序描述符:
+~~~
+// 一个排序断言，当第一个值应当在第二个值之前时，返回'true'
+typealias SortDescriptor<Root> = (Root, Root) -> Bool
+~~~
+
+现在，就可以用这个别名定义比较Person对象的排序描述符了。它可以比较出生年份，也可以比较姓的字符串:
+~~~
+let sortByYear:SortDescriptor<Person> = { $0.yearOfBirth < $1.yearOfBirth }
+let sortByLastName:SortDescriptor<Persion> = {
+	$0.last.localizedStandarCompare($1.last) == .orderedAscending
+} 
+~~~
+
+这个函数的第一个参数是一个名为key的函数，此函数接受一个正在排序的数组的元素，并返回这个排序描述符所处理的属性的值。然后，我们使用第二个参数areInIncreasingOrder比较key返回的结果。最后，用SortDescriptor把这两个参数包装一下，就是要返回的排序描述符了:
+~~~
+//key函数，根据输入的参数返回要进行比较的元素
+//by进行比较的断言
+//通过用by比较key返回值的方式构建SortDescriptor函数
+
+func sortDescriptor<Root, Value> (
+	key: @escaping(Root) -> Value,
+	by areInIncreasingOrder: @escaping(Value, Value) -> Bool)
+	-> SortDescriptor<Root>
+{
+	return { areInIncreasingOrder(key($0), key($1))}
+}
+~~~
+
+key函数描述了如何深入一个Root类型的元素，并提取出一个和特定排序步骤相关的Value类型的值。因为借鉴了泛型参数名字Root和Value，所以它和Swift4引入的Swift原生键路径有很多相同之处。
+
+有了这个函数，我们就可以用另外一种方式来定义sortByYear了：
+~~~
+let sortByYearAlt:SortDescriptor<Person> = sortDescriptor(key:{$0.yearOfBirth}, by: <)
+people.sorted(by: sortByYearAlt)
+~~~
+
+甚至，我们还可以为所有实现了Comparable的类型定义一个重载版本：
+~~~
+func sortDescriptor<Root, Value>(key: @escaping(Root) -> Value) -> SortDescriptor<Root> where Value:Comparable {
+	return { key($0) < key($1)}
+}
+
+let sortByYearAlt2:SortDescriptor<Person> = sortDescriptor(key: { $0.yearOfBirth })
+
+~~~
+
+这两个sortDescriptor都使用了返回布尔值的排序函数，因为这是标准库中对于比较断言的约定。但另一方面，Foundation中像是localizedStandardCompare这样的API，返回的却是一个包含升序，降序，相等的ComparisonResult。给sortDescriptor增加这种支持也是很简单：
+~~~
+func sortDescriptor<Root, Value>(
+key: @escaping (Root) -> Value,
+ascending: Bool = true,
+by comparator: @escaping (Value) -> (Value) -> ComparisonResult) -> SortDescriptor<Root>
+{
+return { lhs, rhs in
+let order: ComparisonResult = ascending ? .orderedAscending
+: .orderedDescending
+return comparator(key(lhs))(key(rhs)) == order }
+}
+
+~~~
+
+## 函数作为代理
+
+### 结构体上实现代理

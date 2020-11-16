@@ -9,6 +9,38 @@ nav_order: 17
 
 Jenkins密码地址: /Users/romy/.jenkins/secrets/initialAdminPassword
 
+
+2、admin密码修改过后忘记的情况
+
+（1）ubuntu下使用命令进入/root/.jenkins目录下面找到config.xml文件
+
+使用命令 sudo vi /root/.jenkins/config.xml进行编辑，删除去掉下面整段的代码片段
+
+~~~
+<useSecurity>true</useSecurity>
+  <authorizationStrategy class="hudson.security.FullControlOnceLoggedInAuthorizationStrategy">
+    <denyAnonymousReadAccess>true</denyAnonymousReadAccess>
+  </authorizationStrategy>
+  <securityRealm class="hudson.security.HudsonPrivateSecurityRealm">
+    <disableSignup>true</disableSignup>
+    <enableCaptcha>false</enableCaptcha>
+  </securityRealm>
+~~~
+
+然后重启jenkins
+
+3.进入首页>“系统管理”>“Configure Global Security”；
+
+4.勾选“启用安全”；
+
+5.点选“Jenkins专有用户数据库”，并点击“保存”；
+
+6.重新点击首页>“系统管理”,发现此时出现“管理用户”；
+
+7.点击进入展示“用户列表”；
+
+8.点击右侧进入修改密码页面，修改后即可重新登录。
+
 ## 注意
 使用pod, 需要配置job中先pod install 
 
