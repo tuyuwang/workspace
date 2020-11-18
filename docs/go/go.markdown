@@ -36,6 +36,55 @@ has_children: true
 查看所有安装的package
 > go list
 
+docker rm -f photoprism  
+docker stop photoprism
+docker start photoprism
+
+~~~
+docker run -d \
+  --name photoprism \
+  --security-opt seccomp=unconfined \
+  --security-opt apparmor=unconfined \
+  -p 2342:2342 \
+  -e PHOTOPRISM_UPLOAD_NSFW="true" \
+  -e PHOTOPRISM_ADMIN_PASSWORD="please-change" \
+  -v /photoprism/storage \
+  -v ~/Pictures:/photoprism/originals \
+  -v ~/Movies/Videos:/photoprism/originals/Videos \
+  photoprism/photoprism
+~~~
+
+
+docker-compose up -d --no-deps photoprism
+docker-compose start photoprism
+docker-compose up -d
+docker-compose pull photoprism
+docker-compose stop photoprism
+docker-compose exec photoprism photoprism index
+
+### 配置apache2反向代理
+sudo apt-get install apache2
+cd /etc/apache2/sites-available
+cp -r 000-default.conf ./photoprism.conf
+sudo vim photoprism.conf
+
+~~~
+sudo a2ensite linuxidc.com.conf
+systemctl reload apache2
+sudo a2dissite 000-default.conf
+
+sudo apache2ctl configtest
+sudo systemctl status apache2
+sudo systemctl restart apache2
+~~~
+
+RewriteEngine命令需要rewrite mod的支持，
+~~~
+cd /etc/apache2/mods-enabled
+sudo ln -s ../mods-available/rewrite.load rewrite.load 
+sudo /etc/init.d/apache2 restart
+~~~
+
 #### 开源学习
 - [社区网站](https://github.com/shen100/golang123)
 - [gin](https://github.com/gin-gonic/gin)

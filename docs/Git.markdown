@@ -14,6 +14,18 @@ nav_order: 8
 git config --global http.proxy 'socks5://127.0.0.1:1086'
 git config --global https.proxy 'socks5://127.0.0.1:1086'
 
+置好代理之后去终端输入git配置命令，开启翻墙代理，电脑连手机4g热点， 命令如下
+
+
+git config --global http.proxy socks5://127.0.0.1:1086
+git config --global http.https://github.com.proxy socks5://127.0.0.1:1086
+
+更新的时候，速度可达到1M/S ，更新完，可以直接通过下面的命令恢复
+
+
+git config --global --unset http.proxy
+git config --global --unset http.https://github.com.proxy
+
 // 使用完后，取消上面操作
 git config --global --unset http.proxy
 git config --global --unset https.proxy
