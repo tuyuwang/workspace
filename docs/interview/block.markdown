@@ -52,9 +52,13 @@ block中的isa指针，根据实际情况会有三种不同的取值，来表示
 - __NSMallocBlock __ 调用copy操作后，复制效果是：引用计数增加；副本存储位置是堆
 
 ### 在ARC环境下，编译器会根据情况自动将栈上的block复制到堆上的几种情况？
+
 1.block作为函数返回值时
+
 2.将block赋值给__strong指针时
+
 3.block作为Cocoa API中方法名含有usingBlock的方法参数时
+
 4.block作为GCD API的方法参数时
 
 
