@@ -11,31 +11,49 @@ parent: interview
 RunLoop通过mach_msg()函数接收、发送消息。它的本质是调用函数mach_msg_trap(),相当于是一个系统调用，会触发内核状态切换。在用户态调用mach_msg_trap()时会切换到内核态；内核态中内核实现的mach_msg()函数会完成实际的工作。
 即基于port的source1，监听端口，端口有消息就会触发回调；而source0，要手动标记为待处理和手动唤醒RunLoop
 
-大致逻辑为：
+大致逻辑为:
+
 1、通知观察者RunLoop即将启动。
+
 2、通知观察者即将要处理Timer事件。
+
 3、通知观察者即将要处理source0事件。
+
 4、处理source0事件。
+
 5、如果基于端口的源(source1)准备好并处于等待状态，进入步骤9.
+
 6、通知观察者线程即将进入休眠状态。
+
 7、将线程置于休眠状态，由用户态切换到内核态，直到下面的任一事件发生才唤醒线程。
+
 - 一个基于port的source1的事件
 - 一个Timer到时间了
 - RunLoop自身的超时时间到了
 - 被其他调用者手动唤醒
+
+
 8、通知观察者线程将被唤醒
+
 9、处理唤醒时收到的事件。
+
 - 如果用户定义的定时器启动，处理定时器事件并重启RunLoop。进入步骤2.
 - 如果输入源启动，传递相应的消息。
 - 如果RunLoop被显示唤醒而且时间还没超时，重启RunLoop.进入步骤2
+
+
 10、通知观察者RunLoop结束。
 
 ## runloop与线程间关系
 线程和RunLoop是一一对应的，其映射关系是保存在一个全局的Dictionary里，自己创建的线程默认是没有开启RunLoop的
 
 ## 如何创建一个常驻线程
-1、为当前线程开启一个RunLoop（第一次调用[NSRunLoop currentRunLoop]方法时实际是会先创建一个RunLoop）
+
+1、为当前线程开启一个RunLoop（第一次调用[NSRunLoop currentRunLoop]
+方法时实际是会先创建一个RunLoop）
+
 2、向当前RunLoop中添加一个Port/Source等维持RunLoop的事件循环(如果RunLoop的mode中一个item都没有，RunLoop会退出)
+
 3、启动该RunLoop
 ~~~
 @autoreleasepool{
