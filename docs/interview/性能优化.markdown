@@ -9,11 +9,68 @@ parent: interview
 
 - 界面渲染
 - 网络请求
-- 启动时间
+- 启动时间 [冷启动优化](https://blog.fiteen.top/2020/ios-app-launch-optimization)
 - 包的大小
 - 数据io
 
 
+### 冷启动优化
+
+- pre main: 用户唤起App到执行main函数之前的过程
+- main: main被调用之后，didFinishLaunchingWithOptions/viewDidAppear之间的过程
+
+pre main: 
+
+- 加载动态链接器
+- 加载dylib
+- - 尽量不使用内嵌dylib
+- - 合并已有内嵌dylib
+- - 检查framework的optional和required设置，如果版本支持则required，optional额外检查导致加载变慢
+- - 使用静态库代替
+- rebase/bind
+- - 核心是减少__DATA段中的指针
+- - 减少ObjC类，方法、分类
+- - 减少C++虚函数
+- - 多用Swift Structs
+- Objc setup
+- - 同上
+- - dyld会注册所有声明过的ObjC类
+- - 将分类插入到类的方法列表中
+- - 检查每个selector的唯一性
+- initializer
+- - 执行如下操作：
+- - - 调用每个ObjC类和分类中的+load方法
+- - - 调用C/C++中的构造器函数(用attrubute((constructor))修饰的函数)
+- - - 创建非基本类型的C++静态全局变量
+- - 优化：
+- - - 尽量避免在类的+load方法中初始化，可以推迟到+initialize中进行
+- - - 避免使用__attribute((constructor))将方法显示标记为初始化器，而是让初始化方法调用时再执行。
+- - - 减少非基本类型的 C++ 静态全局变量的个数。
+
+main: 
+
+- 用纯代码的方式，而不是xib/Storyboard来加载首页视图
+- 延迟暂时不需要的三方库加载
+- 延迟执行部分业务逻辑和UI配置
+- 避免首屏加载时大量的本地/网络数据读取
+- release包中移除NSLog打印
+
+
+webview：
+
+- webview预加载：在App启动时期预先加载一次webview，通过创建空的webview，预先启动Web线程，完成一些全局性的配置
+- 页面耗时(静态页面)：
+- - 静态直出：服务端拉取数据后通过Node.js进行渲染，生成包含首屏数据的HTML文件，发布到CDN上，webview直接从CDN上获取
+- - 离线预推：使用离线包
+- 页面耗时(经常需要动态更新的页面):
+- - 并行加载：webview的打开和资源的请求并行
+- - 动态缓存：动态页面缓存在客户端，用户下次打开的时候先打开缓存页面。然后刷新
+- - 动静分离：将页面分为静态模版和动态数据，根据不同的启动场景进行不同的刷新方案
+- - 预加载：提前拉取需要的增量更新数据
+
+## 视频播放
+
+- [十亿级视频播放技术优化揭密](https://juejin.cn/post/6844903517254090760)
 
 ### Instruments
 
