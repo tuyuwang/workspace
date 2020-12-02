@@ -643,7 +643,25 @@ GCDTimer
 缺点：计时效应仍不是百分之百准确的。另外，他的触发事件也有可能被阻塞，当GCD内部管理的所有线程都被占用时，其触发事件将被延迟。
 
 23、[iOS 谈谈layoutSubviews何用](https://www.jianshu.com/p/2ef48c2f0c97)
+
 24、[iOS设置圆角的四种方法](https://www.jianshu.com/p/86dd5bf298a0)
+
+25、如何设计上传文件/下载文件的请求框架
+参考[OSS](https://help.aliyun.com/document_detail/101673.html?spm=a2c4g.11186623.6.1543.18a17e22R0jqS6)
+
+26、[各种加密算法概念，与性能](http://localhost:4000/workspace/docs/interview/数据安全/)
+
+27、各种锁，底层是如何实现的
+
+28、卡顿原理实现
+
+[ios 利用RunLoop的原理去监控卡顿](https://www.cnblogs.com/qiyiyifan/p/11089735.html)
+
+29、崩溃原理、堆栈回溯
+
+30、AFNetworking原理，特点
+
+31、设计思维，如何设计图片下载，参考SDWebImage
 
 
 ## 参考
