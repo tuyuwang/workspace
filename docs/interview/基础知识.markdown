@@ -519,6 +519,15 @@ iOS10访问相册时发生，目前只发生在iOS10+系统，需要修改工程
 16、webview插入js, 在webView:didCreateJavaScriptContext:forFrame:插入
 
 17、网络模块性能数据，调用系统私有函数_timingData获取所有性能数据
+
+[iOS 性能监控方案 Wedjat（下篇）](https://mp.weixin.qq.com/s?__biz=MzI1MTE2NTE1Ng==&mid=2649516402&idx=1&sn=6b294858aea8710faded49e429e0ae79&chksm=f1efe9f9c69860efca1d72ca85aa34583a7a3c8fd2595c6b8dbae5c925893e52c61fe56eb276#rd)
+
+网络监控一般通过NSURLProtocol和代码注入Hook这两种方式实现，由于NSURLProtocol作为上层接口，使用起来更为方便，因此很自然选择它作为网络监控的方案，但是NSURLProtocol属于URL Loading System体系中，应用层的协议支持有限，只支持FTP、HTTP、HTTPS这几个应用层协议，对于使用其他协议的流量则束手无策，所以存在一定的局限性。
+
+监控底层库CFNetwork则没有这个限制。
+
+网络性能指标:
+
 - 请求耗时: 请求结束 - 请求开始
 - 服务器响应耗时: 响应开始 - 请求结束
 - 下载耗时: 响应结束 - 响应开始
@@ -528,6 +537,23 @@ iOS10访问相册时发生，目前只发生在iOS10+系统，需要修改工程
 - TCP建联耗时
 - 请求数据大小
 - 响应数据大小
+
+实现Hook的三种方式：
+
+- Method Swizzling
+- NSProxy
+- Fishhook
+
+前两者适用于OC实现的库，如NSURLConnection/NSURLSession
+后者适用于C语言实现的库，如CFNetwork
+
+NSProxy 和 NSObject 一样都是根类，它是一个抽象类，你可以通过继承它，并重写 -forwardInvocation: 和 -methodSignatureForSelector: 方法以实现消息转发到另一个实例。综上，NSProxy 的目的就是负责将消息转发到真正的 target 的代理类。
+
+Method swizzling 替换方法需要指定类名，但是 NSURLConnectionDelegate 和 NSURLSessionDelegate 是由业务方指定，通常来说是不确定，所以这种场景不适合使用 Method swizzling。使用 NSProxy 可以解决上面的问题，具体实现：proxy delegate 替换 NSURLConnection 和 NSURLSession 原来的 delegate，当 proxy delegate 收到回调时，如果是要 hook 的方法，则调用 proxy 的实现，proxy 的实现最后会调用原来的 delegate；如果不是要 hook 的方法，则通过消息转发机制将消息转发给原来的 delegate。
+
+
+Apple 在 iOS 10 的 NSURLSessionTaskDelegate 代理中新增了 -URLSession: task:didFinishCollectingMetrics: 方法，如果实现这个代理方法，就可以通过该回调的 NSURLSessionTaskMetrics 类型参数获取到采集的网络指标，实现对网络请求中 DNS 查询/TCP 建立连接/TLS 握手/请求响应等各环节时间的统计。
+
 
 18、webviewJavascript原理
 

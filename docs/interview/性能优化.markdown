@@ -72,6 +72,66 @@ webview：
 
 - [十亿级视频播放技术优化揭密](https://juejin.cn/post/6844903517254090760)
 
+## JS收集页面加载性能数据
+
+通过window.performance.timing获取信息
+
+~~~js
+;(function() {
+    if (window.performance) {
+        const info = window.performance.timing;
+        const details = [
+            {
+                title: '网页重定向的耗时',
+                value: info.redirectEnd - info.redirectStart + 'ms'
+            },
+            {
+                title: '检查本地缓存的耗时',
+                value: info.domainLookupStart - info.fetchStart + 'ms'
+            },
+            {
+                title: 'DNS查询的耗时',
+                value: info.domainLookupEnd - info.domainLookupStart + 'ms'
+            },
+            {
+                title: 'TCP连接的耗时',
+                value: info.connectEnd - info.connectStart + 'ms'
+            },
+            {
+                title: '客户端发起请求的耗时',
+                value: info.responseStart - info.requestStart + 'ms'
+            },
+            {
+                title: '服务端响应的耗时',
+                value: info.responseEnd - info.responseStart + 'ms'
+            },
+            {
+                title: '渲染页面的耗时',
+                value: info.domComplete - info.responseEnd + 'ms'
+            },
+            {
+                title: '解析DOM树耗时',
+                value: info.domComplete - info.domInteractive + 'ms'
+            },
+            {
+                title: '白屏时间',
+                value: info.domLoading - info.fetchStart + 'ms'
+            },
+            {
+                title: 'DOMContentLoaded',
+                value: info.domContentLoadedEventEnd - info.fetchStart + 'ms'
+            },
+            {
+                title: 'Loaded',
+                value: info.loadEventEnd - info.connectStart + 'ms'
+            }
+        ];
+ 
+        console.log(details);
+    }
+}())
+~~~
+
 ### Instruments
 
 #### Core Animation

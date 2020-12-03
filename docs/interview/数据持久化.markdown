@@ -7,3 +7,6 @@ parent: interview
 
 ## 数据持久化
 
+iOS持久化方式:
+
+![save](../../../images/Interview/savedata.jpeg)
