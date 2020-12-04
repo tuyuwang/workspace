@@ -13,6 +13,7 @@ parent: interview
 
 ![image](../../../images/Interview/lock.png)
 
+![lockReal](../../../images/Interview/lockReal.png)
 ### OSSpinLock 自旋锁
 
 自旋锁的实现原理比较简单，就是死循环。当线程a获得锁以后，b线程想要获取锁就需要等待a线程释放锁。在没有获得锁的期间，b线程会一直处于忙等的状态。自旋锁用在临界区执行时间比较短的环境性能会很高。
@@ -194,3 +195,52 @@ do {
 ### 信号量
 
 [OC-底层原理 25:GCD 之 底层原理分析](https://www.jianshu.com/p/9cac2f1777e6)
+
+持有计数的信号，使用计数来实现锁的功能，计数小于0时等待，计数为0或者大于0时，计数减1则不等待。
+~~~Objc
+dispatch_semaphore_create(long value); // 创建信号量持有value数值
+dispatch_semaphore_signal(dispatch_semaphore_t dsema); // 发送一次信号量，数值+1, 数值>=0 则通过
+dispatch_semaphore_wait(dispatch_semaphore_t dsema, dispatch_semaphore_t timeout); //等待信号量，数值-1，数值<0 则阻塞线程
+~~~
+
+具体的等待操作在lll_futex_wait函数中实现，III是low level lock的简称。这个函数通过汇编代码实现，调用到SYS_futex这个系统调用，使线程进入休眠状态，主动让出时间片。
+
+主动让出时间片并不是总是代表效率高。让出时间片会导致操作系统切换到另一个线程，这种上下文切换通常要10微秒左右，而且至少需要切换两次。如果等待时间很短，比如只有几个微秒，忙等就比线程休眠更高效。
+
+### 互斥锁
+
+pthread表示POSIX thread，定义了一组跨平台的线程相关的API，pthread_mutex表示互斥锁。互斥锁的实现原理与信号量非常相似，不是使用忙等，而是阻塞线程并休眠，需要进行上下文切换。
+
+一般情况下，一个线程只能申请一次锁，也只能在获得锁的情况下才能释放锁，多次申请锁或释放未获得的锁都会导致崩溃。假设在已经获得锁的情况下再次申请锁，线程会因为等待锁的释放而进入睡眠状态，因此就不可能再释放锁，从而导致死锁。
+
+然后这种情况经常会发生，比如某个函数申请了锁，在临界区又递归调用了自己。幸运的是pthread_mutex支持递归锁，也就是允许一个线程递归的申请锁，只要把 attr 的类型改成 PTHREAD_MUTEX_RECURSIVE 即可。
+
+互斥锁在申请锁时，调用了 pthread_mutex_lock 方法，它在不同的系统上实现各有不同，有时候它的内部是使用信号量来实现，即使不用信号量，也会调用到 lll_futex_wait 函数，从而导致线程休眠。
+
+上文说到如果临界区很短，忙等的效率也许更高，所以在有些版本的实现中，会首先尝试一定次数(比如 1000 次)的 testandtest，这样可以在错误使用互斥锁时提高性能。
+
+由于 pthread_mutex 有多种类型，可以支持递归锁等，因此在申请加锁时，需要对锁的类型加以判断，这也就是为什么它和信号量的实现类似，但效率略低的原因。
+
+### NSLock
+
+NSLock 只是在内部封装了一个 pthread_mutex，属性为 PTHREAD_MUTEX_ERRORCHECK，它会损失一定性能换来错误提示。
+
+这里使用宏定义的原因是，OC 内部还有其他几种锁，他们的 lock 方法都是一模一样，仅仅是内部 pthread_mutex 互斥锁的类型不同。通过宏定义，可以简化方法的定义。
+
+NSLock 比 pthread_mutex 略慢的原因在于它需要经过方法调用，同时由于缓存的存在，多次方法调用不会对性能产生太大的影响。
+
+### NSCondition
+
+NSCondition的底层是通过条件变量pthread_cond_t来实现的。条件变量有点像信号量，提供了线程阻塞与信号机制，因此可以用来阻塞某个线程，并等待某个数据就绪，然后唤醒线程。
+
+[为什么要使用条件变量](https://blog.csdn.net/syh96123/article/details/106855594/)
+
+### NSRecursiveLock
+
+递归锁也是通过pthread_mutex_lock函数来实现，在函数内部会判断锁的类型，如果是递归锁，就允许递归调用，仅仅将一个计数器加一，锁的释放过程也是同理。
+
+### @synchronized
+
+OC层面的锁，主要是通过牺牲性能换来语法上的简洁和可读。
+
+@synchronized后面需要紧跟一个OC对象，它实际上是把这个对象当作锁来使用。这是通过一个哈希表来实现的，OC在底层使用了一个互斥锁的数组(你可以理解为锁池)，通过对 对象去哈希值来得到对应的互斥锁。

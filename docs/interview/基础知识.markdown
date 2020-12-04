@@ -554,6 +554,12 @@ Method swizzling 替换方法需要指定类名，但是 NSURLConnectionDelegate
 
 Apple 在 iOS 10 的 NSURLSessionTaskDelegate 代理中新增了 -URLSession: task:didFinishCollectingMetrics: 方法，如果实现这个代理方法，就可以通过该回调的 NSURLSessionTaskMetrics 类型参数获取到采集的网络指标，实现对网络请求中 DNS 查询/TCP 建立连接/TLS 握手/请求响应等各环节时间的统计。
 
+taskMetrics方式只适合代理，sessionblock的/connectino无法采集，局限性大
+
+采集WKWebview网络性能数据使用NSURLProtocol转发会导致请求丢body，解决方法是都用js去采集。
+
+
+通过js采集网络性能数据，hook其response方法获取响应数据。（为啥不从js获取，获取不到？）
 
 18、webviewJavascript原理
 

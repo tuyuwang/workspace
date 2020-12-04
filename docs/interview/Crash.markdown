@@ -87,3 +87,17 @@ parent: interview
 }
 ~~~
 
+### QMUI原理
+
+hook NSException的raise方法，进行方法拦截，区分处理吧
+
+[QMUI_iOS](https://github.com/Tencent/QMUI_iOS/commit/cd406c75145e2dc42471e5785f72af6c2958fafa)
+
+![hook](../../../images/Interview/NSExceptionHandler.jpeg)
+
+![hook](../../../images/Interview/hook.jpeg)
+
+### KSCrash
+
+通过调用NSSetUncaughtExceptionHandler函数进行崩溃拦截
+
