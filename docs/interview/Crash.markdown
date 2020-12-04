@@ -89,7 +89,7 @@ parent: interview
 
 ### QMUI原理
 
-hook NSException的raise方法，进行方法拦截，区分处理吧
+hook NSException的raise方法，进行方法拦截，区分处理吧，也是类似于@try catch，不同于@try catch到处写，这个方法可以统一处理崩溃
 
 [QMUI_iOS](https://github.com/Tencent/QMUI_iOS/commit/cd406c75145e2dc42471e5785f72af6c2958fafa)
 

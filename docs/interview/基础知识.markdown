@@ -689,7 +689,7 @@ GCDTimer
 
 [ios 利用RunLoop的原理去监控卡顿](https://www.cnblogs.com/qiyiyifan/p/11089735.html)
 
-29、崩溃原理、堆栈回溯
+29、崩溃捕获原理、堆栈回溯
 
 30、AFNetworking原理，特点
 
