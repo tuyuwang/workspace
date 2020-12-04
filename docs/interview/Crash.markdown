@@ -20,6 +20,8 @@ parent: interview
 
 ### AvoidCrash原理
 
+核心处理就是用@try catch，局限性：只能捕获OC层的崩溃，对于更底层signal/mach/c++类型崩溃无法避免
+
 1、指定方法名和类对象，进行方法交换，通过try catch进行OC层的崩溃拦截，如：
 
 - NSArray

@@ -10,3 +10,7 @@ parent: interview
 iOS持久化方式:
 
 ![save](../../../images/Interview/savedata.jpeg)
+
+### 数据库
+
+[iOS数据库](https://www.jianshu.com/p/2b77e5ab229f)
