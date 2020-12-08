@@ -612,6 +612,20 @@ NSString * registerDynamicFunction(NSString *platform, NSString *token)
 只要重写drawRect,即使空方法，也会增长许都内存(5M)
 [drawRect内存爆增原因](https://blog.csdn.net/allanGold/article/details/107122345)
 
+画线条使用专有图层CAShapeLayer:
+
+- 渲染快速，CAShapeLayer是用了硬件加速
+- 高效使用内存。一个CAShapeLayer不需要像普通CALayer一样创建一个寄宿图，所以无论多大，都不会占用太多内存
+- 不会被图层边界裁剪
+- 不会出现像素化
+
+绘制性能优化：
+
+- 绘制图形性能的优化最好的办法就是不去绘制
+- 利用专有图层代替绘制需求
+- 不得不用到绘制尽量缩小视图面积，并尽量降低重绘频率
+- 异步绘制，推测内容，提前在其他线程绘制图片，在主线程中直接设置图片
+
 20、圆角的实现
 
 UIBezierPath+CAShapeLayer
@@ -680,6 +694,22 @@ GCDTimer
 
 25、如何设计上传文件/下载文件的请求框架
 参考[OSS](https://help.aliyun.com/document_detail/101673.html?spm=a2c4g.11186623.6.1543.18a17e22R0jqS6)
+
+在OSS中，操作的基本数据单元是文件。上传文件功能：
+
+- 简单上传：包括从内存中上传或上传本地文件。<= 5GB
+- 分片上传: <= 48.8TB
+- 追加上传: <= 5GB
+- 断点续传上传: 支持并发上传、自定义分片大学。<= 48.8TB
+
+下载文件:
+
+- 简单下载
+- 流式下载
+- 范围下载
+- 断点续传下载
+
+
 
 26、[各种加密算法概念，与性能](http://localhost:4000/workspace/docs/interview/数据安全/)
 

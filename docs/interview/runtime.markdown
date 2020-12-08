@@ -51,13 +51,19 @@ Category可以添加属性，但是并不会自动生成成员变量及set/get�
 分类中的属性在关联列表里
 
 实现原理：
+
 1、我们不主动引入 Category 的头文件，Category 中的方法都会被添加进主类中。我们可以通过 - performSelector: 等方式对 Category 中的相应方法进行调用：
+
 a)将 Category 和它的主类（或元类）注册到哈希表中；
+
 b)如果主类（或元类）已实现，那么重建它的方法列表。
 
 2、在这里分了两种情况进行处理：
+
 a)Category 中的实例方法和属性被整合到主类中；
+
 b)类方法则被整合到元类中
+
 c)对协议的处理比较特殊，Category 中的协议被同时整合到了主类和元类中。
 
 3、最终都是通过调用 staticvoid remethodizeClass(Class cls) 函数来重新整理类的数据的。
@@ -70,13 +76,19 @@ c)对协议的处理比较特殊，Category 中的协议被同时整合到了主
 - 同名分类方法生效取决于编译顺序
 
 2、Category中有load方法吗？load方法是什么时候调用的？load方法能继承吗？
+
 Category中有load方法，load方法在程序启动装载类信息的时候就会调用。load方法可以继承。调用子类的load方法之前，会先调用父类的load方法
 
 3、load、initialize的区别，以及他们在catefory重写的时候的调用次序
+
 区别在于调用方式和调用时刻
 调用方式：load是根据函数地址直接调用，initialize是通过objc_msgSend调用
+
 调用时刻：load是runtime加载类、分类的时候调用(只会调用1次)，initialize是类第一次接收到消息的时候调用，每一个类只会initialize一次（父类的initialize方法可能会被调用多次）
-调用顺序：先调用类的load方法，先编译那个类，就先调用load.在调用load之前会先调用父类的load方法。分类中load方法不会覆盖本类的load方法，先编译的分类优先调用load方法。initialize先初始化父类，之后再初始化子类。如果子类没有实现initialize,会调用父类的initialize,如果分类实现了initialize，就会覆盖类本身的initialize调用。
+
+调用顺序：
+
+先调用类的load方法，先编译那个类，就先调用load.在调用load之前会先调用父类的load方法。分类中load方法不会覆盖本类的load方法，先编译的分类优先调用load方法。initialize先初始化父类，之后再初始化子类。如果子类没有实现initialize,会调用父类的initialize,如果分类实现了initialize，就会覆盖类本身的initialize调用。
 
 ## 分类和扩展
 

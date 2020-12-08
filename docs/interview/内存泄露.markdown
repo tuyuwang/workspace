@@ -65,7 +65,7 @@ OOMDetector还具有内存泄漏检测功能，能够检测Malloc内存块和OC�
 
 WCMemoryStatPlug插件(收集OOM事件)的实现原理与OOMDetector的原理大同小异，主要区别在于数据dump方案与判定OOM事件逻辑。该插件使用轻量级的平衡二叉树来存储数据，使用Hash Table存储堆栈，将性能优化到极致。同时通过记录App状态来降低OOM事件的误判。如图：
 
-![image](./images/Facebook_OOM.jpg)
+![image](../../../images/Interview/Facebook_OOM.jpg)
 
 降低误判的逻辑:
 
