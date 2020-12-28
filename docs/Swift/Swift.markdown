@@ -8,7 +8,15 @@ has_children: true
 
 ## 大纲
 
+Swift Package
 
+```
+swift package init   
+swift package init --type executable 
+swift package init --type library            
+swift package generate-xcodeproj
+
+```
 
 ## 术语
 
