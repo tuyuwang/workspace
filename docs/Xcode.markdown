@@ -34,3 +34,7 @@ sudo git clone https://github.com/QMUI/QMUI_iOS_Templates.git QMUI\ Class.xctemp
 
 - 展示启动时间耗时，DYLD_PRINT_STATISTICS = 1
 - - 详细耗时: DYLD_PRINT_STATISTICS_DETAILS = 1
+
+#### block编译问题
+build settings -> other c flags -> 
+>-Xclang -fcompatibility-qualified-id-block-type-checking

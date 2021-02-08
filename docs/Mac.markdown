@@ -74,3 +74,43 @@ PING github.io (127.0.0.1): 56 data bytes
 ~~~shell
 sudo killall -HUP mDNSResponder
 ~~~
+
+生成ssh密钥：
+>ssh-keygen -t rsa -C "xxxxx@xxxxx.com"  
+
+>cat ~/.ssh/id_rsa.pub
+
+将已有的ssh密钥复制到粘贴板中：
+>pbcopy < ~/.ssh/id_rsa.pub
+
+
+## 破解软件
+
+一、提示“XXX已损坏，打不开，您应该将它移至废纸篓”的解决方法：
+
+ 
+
+1. 打开终端，输入命令：“sudo spctl --master-disable”然后回车；
+
+ 
+
+2. 提示 “Password:” 输入Mac系统密码（这里输入密码是不显示的）然后回车即可。 
+
+
+3. 如果还不行，在终端粘贴复制输入命令：“sudo xattr -r -d com.apple.quarantine ”（注意最后有一个空格），打开 “访达”（Finder）进入 “应用程序” 目录，找到该软件图标，将图标拖到刚才的终端窗口里面会得到类似命令：“sudo xattr -r -d com.apple.quarantine /Applications/Downie\ 3.app”，回到终端窗口按回车。
+
+ 
+
+二、打开软件提示“意外退出”、“应该移到废纸篓”等解决方法：
+
+ 
+
+1. 点击桌面底部程序坞的 “启动台”（小火箭）图标 → “其他” → “终端” 打开终端；
+
+ 
+
+2. 打开终端后，输入命令：“xcode-select --install”然后回车，接着点击“install”等待安装完成；
+
+ 
+
+3. 在终端输入：“sudo codesign -f -s - ”，打开 “访达”（Finder）进入“应用程序”目录，找到打不开的软件，将该软件图标拖到刚才的终端窗口里面（例如：“codesign --force --deep --sign - /Applications/Downie\ 3.app”），回到终端窗口按回车，提示“replacing existing signature”即可。

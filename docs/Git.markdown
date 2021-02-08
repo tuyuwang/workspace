@@ -45,9 +45,26 @@ fatal: early EOF
 
 解决:
 ~~~
-git config --global http.postBuffer 524288000
+// 1G
+git config --global http.postBuffer 1048576000
 git config --list
+
+// 压缩
+git config --global core.compression 9
+
+
+//或者
+//拉取指定分支最近100次的提交
+git clone --depth 100  --branch developer http://xxxx.git
+
+//拉取其他分支
+$ git clone --depth 1 https://github.com/dogescript/xxxxxxx.git
+$ git remote set-branches origin 'remote_branch_name'
+$ git fetch --depth 1 origin remote_branch_name
+$ git checkout remote_branch_name
 ~~~
+
+compression表示压缩，从clone的终端输出就知道，服务器会压缩目标文件，然后传输到客户端，客户端再解压。取值为 [-1, 9]，-1以zlib 为默认压缩库，0 表示不进行压缩，1..9是压缩速度与最终获得文件大小的不同程度的权衡，数字越大，压缩越慢，得到的文件会越小
 
 #### 下载指定文件
 'childfile'替换为自己要下载的文件夹名称

@@ -14,6 +14,7 @@ nav_order: 3
 bundle修改源
 >bundle config mirror.https://rubygems.org https://gems.ruby-china.com
 
+bundle update jekyll
 
 免费cdn
 >https://cdn.jsdelivr.net/gh/tuyuw/live2d-widget@v0.8.4/autoload.js
