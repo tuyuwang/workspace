@@ -138,3 +138,13 @@ git log --pretty=format:"git id: %h commit: %s"
 ~~~
 
 git log 1.1.3.. --pretty=format:"author: %an %s" | grep -E " bug:| opt:" | cat -n
+
+
+## 回滚版本
+git reset --hard xxxx
+git push -f origin v1.x.x
+
+1、找到提交有误的版本号
+2、git revert -n 版本号
+3、git commit -m “xx”
+4、git push v1.x.x
