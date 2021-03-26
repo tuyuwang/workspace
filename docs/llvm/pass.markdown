@@ -86,3 +86,48 @@ static RegisterStandardPasses Y(
 > Debug/bin/opt --load /Users/tuyw/llvm/llvm-project/build/Debug/lib/LLVMDDPass.dylib  -ddlog ../../test/hello.bc > /dev/null 
 
 > -time-passes 查看执行时间
+
+10、clang加载pass
+>clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Xclang -load -Xclang /path/to/Pass.dylib
+
+> clang -Xclang -load -Xclang mypass.so code.c
+
+~~~
+clang -c -emit-llvm code.c
+$ opt -load myhello.so -myhello code.bc
+~~~
+
+## xcode中clang加载pass
+1、
+
+> build setting -> other C flags -> -Xclang -load -Xclang path/to/xxx1.dylib -Xclang -load -Xclang path/to/xxx2.dylib
+
+2、
+
+> build setting -> + 号 -> CC 设置clang路径 -> CXX 设置clang++路径
+~~~
+/Users/tuyw/llvm/llvm-project-llvmorg-8.0.0/build/Debug/bin/clang
+~~~
+
+需要这样注册LLVM Pass
+~~~
+char Hello::ID = 0;
+static void registerHello(const PassManagerBuilder &, legacy::PassManagerBase &PM)
+{
+  PM.add(new Hello());
+}
+
+static RegisterStandardPasses RegisterStringEncryption(PassManagerBuilder::EP_EnabledOnOptLevel0, registerHello);
+
+~~~
+
+报错时调整EP_EnabledOnOptLevel0这个枚举
+
+
+Pass可选参数
+~~~
+// c flag use: -mllvm -hello
+if (getenv("hello")) {
+    // do something
+}
+~~~
