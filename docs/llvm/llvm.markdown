@@ -1,8 +1,8 @@
 ---
 layout: default
-title: llvm
-nav_order: 4
-permalink: /docs/llvm
+title: LLVM
+nav_order: 5
+permalink: /docs/LLVM
 has_children: true
 ---
 

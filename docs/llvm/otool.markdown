@@ -1,8 +1,8 @@
 ---
 layout: default
-title: otool
+title: Otool
 nav_order: 2
-parent: llvm
+parent: LLVM
 ---
 查看指定区内容
 > otool -v -s __TEXT __cstring a.out

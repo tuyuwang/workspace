@@ -1,0 +1,122 @@
+---
+layout: default
+title: 内存泄露
+nav_order: 2
+parent: 面试
+---
+
+## iOS内存调研报告
+
+#### 背景
+
+关于iOS的内存，从苹果的开发者文档里可以看到，一个App的内存分为三类:
+
+- Leaked memory: Memory unreferenced by your application that cannot be used again or freed (also detectable by using the Leaks instrument).
+- Abandoned memory: Memory still referenced by your application that has no useful purpose.
+- Cached memory: Memory still referenced by your application that might be used again for better performance.
+
+简单点说：
+- 无主内存，没有指针引用，已经无法释放的内存
+- 循环引用导致的，无法释放
+- 缓存
+
+其中 Leaked memory 和 Abandoned memory 都属于应该释放而没释放的内存，都是内存泄露。而 Leaks 工具只负责检测 Leaked memory，而不管 Abandoned memory。在 MRC 时代 Leaked memory 很常见，因为很容易忘了调用 release，但在 ARC 时代更常见的内存泄露是循环引用导致的 Abandoned memory，Leaks 工具查不出这类内存泄露，应用有限。
+
+OOM 的全称是 Out-Of-Memory，是由于 iOS 的 Jetsam 机制造成的一种“另类” Crash，它不同于常规的 Crash，该Crash的发出信号量不在iOS能捕获的信号量范围内，所以通过 Signal 捕获等 Crash 监控方案无法捕获到 OOM 事件。
+
+目前已知两种情况会造成OOM：
+
+- 系统整体内存使用较高，系统基于优先级杀死优先级较低的App。
+- 当使用的App达到了“high water mark”，即达到了系统对单个App的内存限制，系统就会杀死该App。
+
+目前业内已有一些iOS内存分析工具，通过对比这些工具，提供一种全面(无主内存与循环引用)的内存检测与OOM的采集方案是本文的主旨。下面逐个介绍这些工具的功能。
+
+##### Allocation
+
+苹果官方提供的Allocation内存分析工具，对App的内存监控比较全面，能监控到所有堆内存以及部分VM内存分配。功能强大，但是有比较明显的局限性，主要表现为以下两点:
+
+- 无法独立在App运行，只能在调试阶段连接Mac使用。
+- 性能较差，大型App开启后容易引发卡死。
+
+这两点限制了Allocation只适合于在开发阶段辅助分析代码中存在的内存问题，而无法直接对线上用户的内存问题进行监控和定位。
+
+##### FBAllocationTracker
+
+FBAllocationTracker是Facebook开源的内存分析工具，其原理是用Method Swizzling替换原本的alloc方法，这样可以在App运行时记录所有OC实例的分配信息，帮助App在运行阶段发现一些OC对象的异常增长问题。相比Allocation，FBAllocationTracker对App性能影响较低，可以在App中独立运行。但是这个工具也有比较明显的缺陷:
+
+- 监控范围不够全面，只能监控OC对象，不能监控C++对象和malloc内存块以及VM内存。
+- 没有内存对象分配的堆栈信息，对于开发者来说很难只通过对象的类型和数量定位到内存增长的原因。
+
+综上所述，FBAllocationTracker虽然能在App中运行，但是监控的内存范围太小，同时记录的对象信息过于简单，对于分析内存问题帮助十分有限。
+
+##### OOMDetector
+
+腾讯开源的OOMDetector组件。实现原理是通过Hook系统底层的内存分配方法，记录到进程所有内存分配的堆栈信息，同时组件能够在对性能流畅度影响不大的情况下保证在App中独立运行，可以便于分析和监控上用户的内存问题。
+
+OOMDetector的收集OOM事件的原理是通过Hook iOS系统底层内存分配的相关方法(包括malloc_zone相关的堆内存分配以及vm_allocate对应的VM内存分配方法),跟踪并记录进程中每个对象内存的分配信息，包括分配堆栈、累计分配次数、累计分配内存等，这些信息也会被缓存到进程内存中。在内存触顶的时候，组件会定时Dump这些堆栈信息到本地磁盘，这样如果程序爆内存了，就可以将爆内存前Dump的堆栈数据上报到后台服务器进行分析。
+
+OOMDetector还具有内存泄漏检测功能，能够检测Malloc内存块和OC对象的“无主内存泄漏”。所谓“无主内存泄漏”是指内存块在进程内已经没有引用却无法正常释放的内存块。其原理是扫描可能包含指针变量的内存区域有堆内存、栈内存、全局数据区和寄存器，OOMDetector 通过对这些区域遍历扫描即可找到所有可能的“指针变量”，整个扫描流程结束后都没有“指针变量”指向的内存块即是泄漏内存块。
+
+内存泄漏检测功能需要挂起所有线程，整个过程会卡住程序1-2秒。因为扫描过程较为耗时，这个功能目前主要用于App的测试阶段，与自动化测试结合可快速高效的发现泄漏问题。
+
+##### Matrix
+
+微信团队开源工具Matrix中的WCMemoryStatPlugin工具，官方称是一款性能优化到极致的爆内存监控工具，能够全面捕获应用爆内存时的内存分配以及调用堆栈情况。
+
+WCMemoryStatPlug插件(收集OOM事件)的实现原理与OOMDetector的原理大同小异，主要区别在于数据dump方案与判定OOM事件逻辑。该插件使用轻量级的平衡二叉树来存储数据，使用Hash Table存储堆栈，将性能优化到极致。同时通过记录App状态来降低OOM事件的误判。如图：
+
+![image](../../../images/Interview/Facebook_OOM.jpg)
+
+降低误判的逻辑:
+
+1.App没有升级
+
+2.App没有调用exit()或abort()退出
+
+3.App没有出现crash
+
+4.用户没有强退App
+
+5.系统没有升级/重启
+
+6.App当时没有后台运行
+
+7.App出现FOOM
+
+综上所述，Matrix的OOM收集逻辑对比于OOMDetector更加全面，从数据存储性能方面也优于OOMDetector。
+
+##### MLeaksFinder
+
+MLeaksFinder是WeRead团队开源的一款用于检测内存泄漏工具。与OOMDetector的检测无主内存的功能不同，该工具检测的场景是由循环引用导致的内存不能释放的内存泄漏。
+
+引入 MLeaksFinder后，就可以自动在 App 运行过程检测到内存泄露的对象并立即提醒，无需打开额外的工具，也无需为了检测内存泄露而一个个场景去重复地操作。MLeaksFinder 目前能自动检测 UIViewController 和 UIView 等对象的内存泄露。
+
+其实现原理是为基类NSObject添加一个方法-willDealloc方法，该方法的作用是，先用一个弱指针指向 self，并在一小段时间(3秒)后，通过这个弱指针调用 -assertNotDealloc，而 -assertNotDealloc 主要作用是直接中断言或弹出提示。
+
+~~~
+
+- (BOOL)willDealloc {
+    __weak id weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [weakSelf assertNotDealloc];
+    });
+    return YES;
+}
+- (void)assertNotDealloc {
+     NSAssert(NO, @“”);
+}
+
+~~~
+
+这样，当我们认为某个对象应该要被释放了，在释放前调用这个方法，如果3秒后它被释放成功，weakSelf 就指向 nil，不会调用到 -assertNotDealloc 方法，也就不会中断言，如果它没被释放（泄露了），-assertNotDealloc 就会被调用中断言。这样，当一个 UIViewController 被 pop 或 dismiss 时（我们认为它应该要被释放了），我们遍历该 UIViewController 上的所有 view，依次调 -willDealloc，若3秒后没被释放，就会中断言。
+
+#### 总结
+
+本文主要介绍了业界内各个iOS内存分配工具的实现原理。从以上的原理分析，实现OOM事件的采集以Matrix的实现方式最佳；对内存分析的功能实现，可综合OOMDetector的无主内存块监控与MLeaksFinder的循环引用监控原理实现。
+
+参考:
+
+- [iOS微信内存监控](https://wetest.qq.com/lab/view/367.html?from=content_juejin)
+- [iOS爆内存解决方案](https://segmentfault.com/a/1190000012825286)
+- [MLeaksFinder:精准iOS内存泄漏检测工具](http://wereadteam.github.io/2016/02/22/MLeaksFinder/)
+

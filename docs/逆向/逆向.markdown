@@ -1,0 +1,9 @@
+---
+layout: default
+title: 逆向
+permalink: /docs/逆向
+nav_order: 8
+has_children: true
+---
+
+- [iOS符号表恢复&逆向支付宝](http://blog.imjun.net/posts/restore-symbol-of-iOS-app/)

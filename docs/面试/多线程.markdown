@@ -1,0 +1,64 @@
+---
+layout: default
+title: 多线程
+nav_order: 7
+parent: 面试
+---
+
+## NSThread
+
+## NSOperationQueue 的优点
+
+NSOperation、NSOperationQueue 是苹果提供给我们的一套多线程解决方案。实际上 NSOperation、 NSOperationQueue 是基于 GCD 更高一层的封装，完全面向对象。但是比 GCD 更简单易用、代码可读性 也更高。
+
+1、可以添加任务依赖，方便控制执行顺序 
+
+2、可以设定操作执行的优先级 
+
+3、任务执行状态控制:isReady,isExecuting,isFinished,isCancelled
+如果只是重写 NSOperation 的 main 方法，由底层控制变更任务执行及完成状态，以及任务退出 如果重写了 NSOperation 的 start 方法，自行控制任务状态
+系统通过 KVO 的方式移除 isFinished==YES 的 NSOperation
+
+4、可以设置最大并发量
+
+
+## NSOperation 和 NSOperationQueue 
+1、操作(Operation):
+执行操作的意思，换句话说就是你在线程中执行的那段代码。在 GCD 中是放在 block 中的。在NSOperation 中，使用 NSOperation 子类 NSInvocationOperation、 NSBlockOperation，或者自定义子类来封装操作。
+
+2、操作队列(Operation Queues):
+这里的队列指操作队列，即用来存放操作的队列。不同于 GCD 中的调度队列 FIFO(先进先出)的原则。 NSOperationQueue 对于添加到队列中的操作，首先进入准备就绪的状态(就绪状态取决于操作之间的依赖 关系)，然后进入就绪状态的操作的开始执行顺序(非结束执行顺序)由操作之间相对的优先级决定(优 先级是操作对象自身的属性)。
+
+## GCD
+
+三种队列类型:
+- main queue:通过 dispatch_get_main_queue()获得，这是一个与主线程相关的串行队列。
+- global queue:全局队列是并发队列，由整个进程共享。存在着高、中、低三种优先级的全局队列。调用dispath_get_global_queue 并传入优先级来访问队列。
+- 自定义队列:通过函数 dispatch_queue_create 创建的队列
+
+## GCD与NSOperationQueue
+
+1、GCD 执行效率更高，而且由于队列中执行的是由 block 构成的任务，这是一个轻量级的数据结构，写起 来更方便
+
+2、GCD 只支持 FIFO 
+的队列，而NSOperationQueue可以通过设置最大并发数，设置优先级，添加依赖关系 等调整执行顺序
+
+3、NSOperationQueue 甚至可以跨队列设置依赖关系，但是 GCD 只能通过设置串行队列，或者在队列内添 加 barrier(dispatch_barrier_async)任务，才能控制执行顺序,较为复杂
+
+4、NSOperationQueue 因为面向对象，所以支持 KVO，可以监测 operation 是否正在执行(isExecuted)、 是否结束(isFinished)、是否取消(isCanceld)
+
+## 自旋锁与互斥锁
+
+自旋锁是一种用于保护多线程共享资源的锁，与一般互斥锁不同之处在于当自旋锁尝试获取锁时以忙等的形式不断地循环检查锁是否可用。当上一个线程的任务没有执行完毕的时候(被锁住)，那么下一个线程会一直等待(不会休眠)，当上一个线程的任务执行完毕，下一个线程会立即执行。在多CPU的环境中，对持有锁较短的程序来说，使用自旋锁代替一般的互斥锁往往能够提高程序的性能。
+
+互斥锁当上一个线程的任务没有执行完毕的时候（被锁住），那么下一个线程会进入睡眠状态等待任务执行完毕，当上一个线程任务执行完毕，下一个线程会自动唤醒然后执行任务。
+
+总结：
+自旋锁会忙等：所谓忙等，即在访问被锁资源时，调用者线程不会休眠，而是不停循环在那里，直到资源释放锁。
+互斥锁会休眠：所谓休眠，即在访问被锁资源时，调用者线程会休眠，此时cpu可以调度其他线程工作。直到被锁资源释放锁。此时会唤醒休眠线程。
+
+
+自旋锁:atomic、OSSpinLock、dispatch_semaphore_t
+互斥锁:pthread_mutex、@ synchronized、NSLock、NSConditionLock 、NSCondition、NSRecursiveLock
+
+优先级反转：如果一个低优先级的线程获得锁并访问共享资源，这时一个高优先级的线程也尝试获得这个锁，它会处于 spin lock 的忙等状态从而占用大量 CPU。此时低优先级线程无法与高优先级线程争夺 CPU 时间，从而导致任务迟迟完不成、无法释放 lock。

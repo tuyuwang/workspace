@@ -1,0 +1,16 @@
+---
+layout: default
+title: 数据持久化
+nav_order: 10
+parent: 面试
+---
+
+## 数据持久化
+
+iOS持久化方式:
+
+![save](../../../images/Interview/savedata.jpeg)
+
+### 数据库
+
+[iOS数据库](https://www.jianshu.com/p/2b77e5ab229f)

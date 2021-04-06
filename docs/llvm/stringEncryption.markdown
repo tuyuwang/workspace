@@ -1,8 +1,8 @@
 ---
 layout: default
-title: clang
+title: StringEncryption
 nav_order: 4
-parent: llvm
+parent: LLVM
 ---
 
 [自己动手实现基于llvm的字符串加密](https://iosre.com/t/llvm/10610)

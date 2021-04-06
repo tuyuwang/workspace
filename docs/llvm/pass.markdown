@@ -1,8 +1,8 @@
 ---
 layout: default
-title: clang
+title: Pass
 nav_order: 3
-parent: llvm
+parent: LLVM
 ---
 
 ## 自定义Pass

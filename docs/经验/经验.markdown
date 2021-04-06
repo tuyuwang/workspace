@@ -1,0 +1,11 @@
+---
+layout: default
+title: 经验
+nav_order: 8
+permalink: /docs/经验
+has_children: true
+---
+
+## 杂七杂八记录
+
+用于总结一些工作经验

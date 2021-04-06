@@ -1,0 +1,7 @@
+---
+layout: default
+title: 基本语法
+nav_order: 1
+parent: C++
+grand_parent: 语言
+---

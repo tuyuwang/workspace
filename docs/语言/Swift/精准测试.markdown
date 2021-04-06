@@ -1,0 +1,20 @@
+---
+layout: default
+title: 精准测试
+nav_order: 2
+parent: Swift
+grand_parent: 语言
+---
+
+## 精准测试
+
+- [猿辅导 iOS 精准测试实践 - Objective-C 与 Swift 混编工程精准测试探索](https://mp.weixin.qq.com/s/14hmLWNXAh1FKZT5NI5QsQ)
+
+- [Source-based Code Coverage¶](https://clang.llvm.org/docs/SourceBasedCodeCoverage.html)
+
+
+### Xcode配置
+
+在buildSetting 中的 other link flag 添加 flag
+- clang, -fprofile-instr-generate + -fcoverage-mapping
+- swiftc, -profile-generate + -profile-coverage-mapping

@@ -1,8 +1,8 @@
 ---
 layout: default
-title: clang
+title: Clang
 nav_order: 1
-parent: llvm
+parent: LLVM
 ---
 
 只处理预编译(Only run the preprocessor)
