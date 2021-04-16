@@ -1,0 +1,67 @@
+---
+layout: default
+title: 崩溃堆栈类型
+nav_order: 7
+parent: 经验
+---
+
+1、非主线程操作UI
+~~~
+#3 Thread
+SIGTRAP
+
+libdispatch.dylib	__dispatch_assert_queue_fail + 112
+1 libdispatch.dylib	__dispatch_assert_queue_fail + 104
+2 libdispatch.dylib	_dispatch_assert_queue$V2$VARIANT$armv81 + 144
+3 UIKitCore	-[UIImageView _mainQ_beginLoadingIfApplicable] + 72
+4 UIKitCore	-[UIImageView setHidden:] + 72
+5 UIKitCore	-[UIButton _updateImageView] + 540
+6 UIKitCore	-[UIButton layoutSubviews] + 348
+7 UIKitCore	-[UIView(CALayerDelegate) layoutSublayersOfLayer:] + 2468
+8 QuartzCore	-[CALayer layoutSublayers] + 288
+9 QuartzCore	CA::Layer::layout_if_needed(CA::Transaction*) + 520
+10 QuartzCore	CA::Layer::layout_and_display_if_needed(CA::Transaction*) + 140
+11 QuartzCore	CA::Context::commit_transaction(CA::Transaction*, double, double*) + 416
+12 QuartzCore	CA::Transaction::commit() + 728
+13 QuartzCore	CA::Transaction::release_thread(void*) + 228
+14 libsystem_pthread.dylib	__pthread_tsd_cleanup + 520
+15 libsystem_pthread.dylib	__pthread_exit + 80
+16 libsystem_pthread.dylib	__pthread_wqthread_legacy_worker_wrap
+17 libsystem_pthread.dylib	_pthread_wqthread + 416
+~~~
+
+__dispatch_assert_queue_fail队列断言，一般用于检查是否在正确的队列处理逻辑。
+从线程名称分析可以知道是非主线程，却操作UI，因而导致崩溃。
+
+
+2、无效堆栈
+启动3s崩溃
+~~~
+#23 Thread
+SIGTRAP
+
+0 libsystem_malloc.dylib	_nanov2_allocate_from_block$VARIANT$mp.cold.1 + 36
+1 libsystem_malloc.dylib	_nanov2_allocate_from_block$VARIANT$mp.cold.1 + 36
+2 libsystem_malloc.dylib	_nanov2_find_block_and_allocate$VARIANT$mp
+3 libsystem_malloc.dylib	_nanov2_allocate$VARIANT$mp + 124
+4 libsystem_malloc.dylib	_nanov2_calloc$VARIANT$mp + 136
+5 libsystem_malloc.dylib	malloc_zone_calloc + 140
+6 libsystem_malloc.dylib	calloc + 32
+7 CoreFoundation	__cow_create + 28
+8 CoreFoundation	-[__NSDictionaryM mutableCopyWithZone:] + 68
+9 CoreFoundation	-[__NSDictionaryM _cfMutableCopy] + 24
+10 CFNetwork	_CFStreamErrorFromCFError + 281072
+11 CoreFoundation	-[__NSDictionaryM __apply:context:] + 128
+12 CFNetwork	_CFStreamErrorFromCFError + 279180
+13 CFNetwork	_CFStreamErrorFromCFError + 280684
+14 libdispatch.dylib	__dispatch_call_block_and_release + 24
+15 libdispatch.dylib	__dispatch_client_callout + 16
+16 libdispatch.dylib	__dispatch_lane_serial_drain$VARIANT$mp + 608
+17 libdispatch.dylib	__dispatch_lane_invoke$VARIANT$mp + 464
+18 libdispatch.dylib	__dispatch_workloop_invoke$VARIANT$mp + 1612
+19 libdispatch.dylib	__dispatch_workloop_worker_thread + 588
+20 libsystem_pthread.dylib	_pthread_wqthread + 272
+~~~
+可以通过符号断点该线程堆栈方法/其他线程堆栈方法进行查看所有线程堆栈的对比，类似则是可怀疑对象。
+
+

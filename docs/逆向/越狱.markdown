@@ -124,3 +124,9 @@ https://www.jianshu.com/p/41e4035c656f
 
 7、重复砸壳app操作，砸所有动态库
 
+## 分析汇编
+>otool "可执行文件路径"   -p "函数或者方法名" -V -t 
+
+otool命令中 -p 后面跟的是方法名或者函数名或者符号名。 这里需要注意的时因为系统编译时可能会在函数名或者符号名前多增加一个下划线_ 因此在指定符号名时需要多增加一个_。 -V 是表明打印函数对应的汇编代码。 -t 是表明打印代码段中的代码。
+
+>otool "/Users/apple/Downloads/Payload/testApp.app/testApp" -p "___99-[XXX fn:queue:]_block_invoke" -V -t

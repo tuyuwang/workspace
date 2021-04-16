@@ -39,3 +39,6 @@ sudo git clone https://github.com/QMUI/QMUI_iOS_Templates.git QMUI\ Class.xctemp
 #### block编译问题
 build settings -> other c flags -> 
 >-Xclang -fcompatibility-qualified-id-block-type-checking
+
+#### 查看Mach-O
+使用 $ xcrun size -lm <binary-path> 指令可以查看 Mach-O 文件 Data 部分的结构和各 Segment/Section 的大小信息（该 Mach-O 文件由 Xcode 的 iOS App 模板工程构建而来）。在不需要更详细的信息时，这条命令很方便。
