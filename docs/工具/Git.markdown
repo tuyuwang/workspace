@@ -149,3 +149,28 @@ git push -f origin v1.x.x
 2、git revert -n 版本号
 3、git commit -m “xx”
 4、git push v1.x.x
+
+## 本地合并commits
+~~~
+git rebase -i [startPoint] [endPoint]
+~~~
+其中-i的意思是–interactive，即弹出交互式的界面让用户编辑完成合并操作，[startpoint] [endpoint]则指定了一个编辑区间，如果不指定[endpoint]，则该区间的终点默认是当前分支HEAD所指向的commit(注：该区间指定的是一个前开后闭的区间)。
+
+~~~
+// 合并从当前head到15f745b(commit id)
+git rebase -i 15f745b
+或:
+// 合并最近的两次提交
+git rebase -i HEAD~2
+~~~
+
+执行这个命令后会跳到一个vi编辑器
+里面的提示有：
+pick：保留该commit（缩写:p）
+reword：保留该commit，但我需要修改该commit的注释（缩写:r）
+edit：保留该commit, 但我要停下来修改该提交(不仅仅修改注释)（缩写:e）
+squash：将该commit和前一个commit合并（缩写:s）
+fixup：将该commit和前一个commit合并，但我不要保留该提交的注释信息（缩写:f）
+exec：执行shell命令（缩写:x）
+drop：我要丢弃该commit（缩写:d）
+

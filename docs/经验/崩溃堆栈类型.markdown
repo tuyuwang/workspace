@@ -64,4 +64,117 @@ SIGTRAP
 ~~~
 可以通过符号断点该线程堆栈方法/其他线程堆栈方法进行查看所有线程堆栈的对比，类似则是可怀疑对象。
 
+3、堆栈没有指向具体行号
+
+具体参考[iOS疑难Crash的寄存器赋值追踪排查技术](https://www.jianshu.com/p/958d4f109bb0)
+
+~~~
+//符号化后的崩溃堆栈
+Date/Time:       2021-03-25 04:35:38.211 +0800
+OS Version:      iOS 10.3.2 (14F89)
+Report Version:  104
+
+Monitor Type:    Unix Signal
+Exception Type:  EXC_CRASH (SIGABRT)
+Exception Codes: 0x00000000 at 0x00000001808f1014
+Crashed Thread:  27
+
+
+Pthread id: 1313098
+Thread 27 Crashed:
+0   libsystem_kernel.dylib          __pthread_kill + 8
+1   libsystem_pthread.dylib         pthread_kill + 112
+2   libsystem_c.dylib               abort + 140
+3   libsystem_malloc.dylib          szone_error + 420
+4   libsystem_malloc.dylib          free_list_checksum_botch.295 + 36
+5   libsystem_malloc.dylib          tiny_free_list_remove_ptr + 288
+6   libsystem_malloc.dylib          tiny_free_no_lock + 684
+7   libsystem_malloc.dylib          free_tiny + 472
+8   CoreFoundation                  _CFRelease + 1228
+//只有这句信息可以参考
+9   testApp                        __99-[XXX fn:queue:]_block_invoke + 384
+10  libdispatch.dylib               _dispatch_call_block_and_release + 24
+11  libdispatch.dylib               _dispatch_client_callout + 16
+12  libdispatch.dylib               _dispatch_queue_serial_drain + 928
+13  libdispatch.dylib               _dispatch_queue_invoke + 884
+14  libdispatch.dylib               _dispatch_root_queue_drain + 540
+15  libdispatch.dylib               _dispatch_worker_thread3 + 124
+16  libsystem_pthread.dylib         _pthread_wqthread + 1096
+
+//这是原始崩溃栈
+Pthread id: 1313098
+ Thread 27 Crashed:
+0   libsystem_kernel.dylib          0x00000001808f1014 __pthread_kill + 8
+1   libsystem_pthread.dylib         0x00000001809bb264 pthread_kill + 112
+2   libsystem_c.dylib               0x00000001808659c4 abort + 140
+3   libsystem_malloc.dylib          0x0000000180931828 szone_error + 420
+4   libsystem_malloc.dylib          0x000000018093b74c 0x180924000 + 96076
+5   libsystem_malloc.dylib          0x0000000180928994 0x180924000 + 18836
+6   libsystem_malloc.dylib          0x000000018093ba00 0x180924000 + 96768
+7   libsystem_malloc.dylib          0x000000018093c0c8 0x180924000 + 98504
+8   CoreFoundation                  0x00000001818a701c 0x1817ca000 + 905244
+9   testApp                         0x0000000103b9e5b8 __99-[XXX fn:queue:]_block_invoke + 384
+10  libdispatch.dylib               0x00000001807ae9e0 0x1807ad000 + 6624
+11  libdispatch.dylib               0x00000001807ae9a0 0x1807ad000 + 6560
+12  libdispatch.dylib               0x00000001807bcad4 0x1807ad000 + 64212
+13  libdispatch.dylib               0x00000001807b22cc 0x1807ad000 + 21196
+14  libdispatch.dylib               0x00000001807bea50 0x1807ad000 + 72272
+15  libdispatch.dylib               0x00000001807be7d0 0x1807ad000 + 71632
+16  libsystem_pthread.dylib         0x00000001809b7100 _pthread_wqthread + 1096
+
+
+Binary Images:
+       0x1000b8000 -        0x108263fff +testApp arm64  <cb8cc0075ed4352b802c6c586b8a93d5>
+~~~
+
+崩溃在第9行__99-[XXX fn:queue:]_block_invoke + 384这里，可以用系统的otool工具进行反汇编显示具体的函数/方法:
+
+>  otool "可执行文件路径"   -p "函数或者方法名" -V -t 
+
+otool命令中 -p 后面跟的是方法名或者函数名或者符号名。 这里需要注意的时因为系统编译时可能会在函数名或者符号名前多增加一个下划线_ 因此在指定符号名时需要多增加一个_。 -V 是表明打印函数对应的汇编代码。 -t 是表明打印代码段中的代码。
+
+~~~
+/Users/apple/Downloads/Payload/testApp.app/testApp:
+(__TEXT,__text) section
+___99-[XXX fn:queue:]_block_invoke:
+......... 省略部分代码
+0000000103ae6554<+284>  mov x20, x0
+0000000103ae6558<+288>  ldr x0, [x20, #x20]
+0000000103ae655c<+292>  adrp    x8, 26695 ; 0x10a32d000
+0000000103ae6560<+296>  ldr x1, [x8, #0x940] ; Objc selector ref: testString
+0000000103ae6564<+300>  bl  0x107fac9e8 ; Objc message: -[x0 testString]
+0000000103ae6568<+304>  mov x29, x29
+0000000103ae656c<+308>  bl  0x107faca48 ; symbol stub for: _objc_retainAutoreleasedReturnValue
+0000000103ae6570<+312>  mov x25, x0
+0000000103ae6574<+316>  mov x0, x26
+0000000103ae6578<+320>  bl  0x107faca18 ; symbol stub for: _objc_release
+0000000103ae657c<+324>  mov x0, x25
+0000000103ae6580<+328>  mov x1, x22
+0000000103ae6584<+332>  bl  0x107fac9e8 ; Objc message: -[x0 testString]  //这里是otool的bug真实应该是 length方法。
+0000000103ae6588<+336>  cmp x0, #0x5
+0000000103ae658c<+340>  b.lo    0x103ae65bc
+0000000103ae6590<+344>  adrp    x8, 26674 ; 0x10a318000
+0000000103ae6594<+348>  ldr x1, [x8, #0xb30] ; Objc selector ref: substringToIndex:
+0000000103ae6598<+352>  mov x0, x25
+0000000103ae659c<+356>  mov w2, #0x4
+0000000103ae65a0<+360>  bl  0x107fac9e8 ; Objc message: -[x0 substringToIndex:]
+0000000103ae65a4<+364>  mov x29, x29
+0000000103ae65a8<+368>  bl  0x107faca48 ; symbol stub for: _objc_retainAutoreleasedReturnValue
+0000000103ae65ac<+372>  mov x22, x0
+0000000103ae65b0<+376>  mov x0, x25
+0000000103ae65b4<+380>  bl  0x107faca18 ; symbol stub for: _objc_release
+0000000103ae65b8<+384>  mov x25, x22
+~~~
+
+从上述的崩溃信息可以看出崩溃的地址是0x0000000103b9e5b8。根据这个地址可以得出崩溃是在我们反汇编代码的倒数第二行。0x0000000103ae65b4<+380>
+
+1. 线上的程序运行时程序时会在一个随机的基地址上加载，从崩溃的原始堆栈中最下面部分可以看到程序映像的基地址就是 0x1000b8000。因此：
+
+> 0x0000000103b9e5b8 - 0x1000b8000 = 0x0000000103ae65b8
+2. 又因为一般程序崩溃的地址都有3个特征：
+a. 崩溃堆栈层级中的非顶层地址都是函数调用指令的下一条地址也就是LR的值，所以真实的崩溃指令处是第1步算出的结果再减去4也就是实际崩溃的地址是：0x0000000103ae65b4
+
+b. 如果崩溃信息出现在最顶层时，一般的崩溃指令都是带有内存访问的指令。假如崩溃是在第上面的第二条指令，也就是在ldr x0, [x20, #x20] 处时很大概率是访问的内存地址无效产生的崩溃。
+
+c . 如果崩溃信息出现在最顶层即无内存访问也无函数调用的指令时，这种崩溃一般是触发了brk断点指令，或者产生了其他一些无法可判断的原因了。前者比较好定位，后者就很难了。
 

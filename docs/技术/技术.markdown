@@ -1,0 +1,11 @@
+---
+layout: default
+title: 技术
+nav_order: 
+permalink: /docs/技术
+has_children: true
+---
+
+## AOP技术
+
+[使用 libffi 实现 AOP](https://www.cnblogs.com/feng9exe/p/10401404.html)
