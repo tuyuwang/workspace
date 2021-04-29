@@ -134,6 +134,97 @@ load register/load pair
 
 对比w9与0是否相等，相等就跳转到地址0x104d50dfc
 
-#### ret
+6. ret
 
 默认使用lr(x30)寄存器的值，通过底层指令提示CPU此处作为下条指令的地址
+
+7. b
+跳转指令，跳转叶子函数
+
+8. cbz
+compare b zero 比较（Compare），如果结果为零（Zero）就转移（只能跳到后面的指令）
+
+9. cbnz
+比较，如果结果非零（Non Zero）就转移（只能跳到后面的指令）
+
+## 规律:基于Xcode调试
+
+函数最终会被转为汇编
+
+1. 在起始位置会进行申请栈空间，结束时进行栈平衡。
+~~~
+Example`__39-[svc getMeta:]_block_invoke:
+//申请栈空间
+0x1044442f4 <+12>:   sub    sp, sp, #0x200            ; =0x200 
+//...
+//栈平衡
+0x104444a30 <+1864>: add    sp, sp, #0x200            ; =0x200 
+~~~
+
+2. 保护x29，x30，即栈底与返回地址
+~~~
+...
+// 保存在栈空间中
+0x1024b0d58 <+4>:    stp    x29, x30, [sp, #0x10]
+...
+// 将原始的值返回到x29,x30中
+0x1024b134c <+1528>: ldp    x29, x30, [sp, #0x10]
+...
+~~~
+由于函数存在嵌套调用函数的行为，所以会需要对栈底与返回地址进行保护，函数开始执行时将这两个值写入栈空间中，在将要退出该函数之前，还原寄存器值。避免因嵌套其他函数，导致x29，x30被修改。
+
+3. 取全局参数/局部参数，保存入栈中
+
+4. 声明局部变量
+
+oc实现是:
+~~~
+NSString *testStr = @"testAbc"
+~~~
+
+汇编实现:
+~~~
+...
+0x1026b8d84 <+48>:   adrp   x0, 3731
+0x1026b8d88 <+52>:   add    x0, x0, #0x918            ; =0x918 
+0x1026b8d8c <+56>:   bl     0x102e5d1cc               ; symbol stub for: objc_retain
+0x1026b8d90 <+60>:   stur   x0, [x29, #-0x60]
+...
+~~~
+
+adrp+add寻找字符串地址，放入x0中，使用register read x0可以输出testAbc。然后使用bl 调用retain进行retain操作。最后将值存入栈中，解放x0，并方便后面使用该字符串。
+
+5. 函数调用
+
+oc实现：
+~~~
+[NSFileManager defaultManager];
+~~~
+
+汇编:
+~~~
+0x1026b8da4 <+80>:   adrp   x8, 5170
+0x1026b8da8 <+84>:   add    x8, x8, #0x868            ; =0x868 
+0x1026b8dac <+88>:   ldr    x0, [x8]
+0x1026b8db0 <+92>:   adrp   x8, 5090
+0x1026b8db4 <+96>:   add    x8, x8, #0x418            ; =0x418 
+0x1026b8db8 <+100>:  ldr    x1, [x8]
+0x1026b8dbc <+104>:  bl     0x102e5d19c               ; symbol stub for: objc_msgSend
+0x1026b8dc0 <+108>:  mov    x29, x29
+0x1026b8dc4 <+112>:  bl     0x102e5d1f0               ; symbol stub for: objc_retainAutoreleasedReturnValue
+~~~
+
+adrp+add找出NSFileManager存入x8中，然后赋值给x0，同样的步骤找出defaultManager，赋值给x1。最后进行objc_msgSend进行调用。对应oc的消息转发原理，x0为self，x1为selector。
+
+该方法得到的返回值，也就是[NSFileManager defaultManager]的实例对象存放在x0中。可以通过register read x0和po [NSFileManager defaultManager]对比地址，是一致的。
+
+汇编中，返回值一般存放在x0中，函数调用x0一般为self，x1一般为selector
+
+6. block 调用
+
+~~~
+HLLDriver_Example`__29-[SplashScreenVC viewDidLoad]_block_invoke at SplashScreenVC.m:46
+
+HLLDriver_Example`__block_descriptor_48_e5_v8?0ls32l8r40l8 + 512
+~~~
+

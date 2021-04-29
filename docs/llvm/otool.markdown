@@ -12,3 +12,6 @@ parent: LLVM
 
 查看链接的动态库
 > otool -L a.out
+
+查看指定段
+> xcrun size -lm /path/to/file
