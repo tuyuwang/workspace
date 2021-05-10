@@ -174,3 +174,29 @@ fixup：将该commit和前一个commit合并，但我不要保留该提交的注
 exec：执行shell命令（缩写:x）
 drop：我要丢弃该commit（缩写:d）
 
+## github慢
+一、确定ip
+进入网址https://github.com.ipaddress.com
+
+查看GitHub的ip地址。
+
+140.82.112.3 github.com
+
+
+二、确定域名ip
+进入网址https://fastly.net.ipaddress.com/github.global.ssl.fastly.net
+
+
+199.232.69.194 github.global.ssl.fastly.net
+
+
+三、确定静态资源ip
+进入网址https://github.com.ipaddress.com/assets-cdn.github.com
+
+
+185.199.108.153 assets-cdn.github.com
+
+185.199.110.153 assets-cdn.github.com
+
+185.199.111.153 assets-cdn.github.com
+
