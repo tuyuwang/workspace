@@ -15,3 +15,6 @@ parent: LLVM
 
 查看指定段
 > xcrun size -lm /path/to/file
+
+查看指定函数
+>otool “可执行文件路径” -p “函数或者方法名” -V -t
