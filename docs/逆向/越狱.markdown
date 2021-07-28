@@ -33,7 +33,7 @@ Q2:ssh 登录不了
 ~~~~
 su -
 
-alpine
+#alpine
 
 //开启droper
 /usr/local/bin/dropbear -F -R -p 22
@@ -70,7 +70,8 @@ cryptid 1
 4、手机上开启debuserver
 > debugserver *:1111 -a WeChat
 
-5、开启usb代理
+
+
 > iproxy 1111 1111  
 
 6、mac端访问代理
@@ -82,6 +83,7 @@ cryptid 1
 使用Anaconda进行python环境管理，纯净环境，进行安装配置
 https://juejin.im/post/6844904006024691726#heading-20
 https://www.jianshu.com/p/41e4035c656f
+https://iosre.com/t/frida-ios-dump/11640
 
 > sudo pip install frida-tools
 > git clone https://github.com/AloneMonkey/frida-ios-dump
@@ -91,11 +93,15 @@ https://www.jianshu.com/p/41e4035c656f
 > pip install tqdm 
 > pip install scp
 > iproxy 2222 22
-> ./dumper.py 微信 -P passwd
+> ./dump.py 微信 -P passwd
+> ./dump.py bundleid
 
 ### 手动砸壳
 1、启动App，开启端口，开启LLDB状态，吸附该端口
 ~~~
+>debugserver *:1111 -a WeChat
+>debugserver *:1111 -x auto /var/containers/Bundle/Application/02EDAA42-12B3-4904-B381-EC6924619784/excuteable
+
 // 开启lldb状态
 > lldb
 // 吸附对应端口
