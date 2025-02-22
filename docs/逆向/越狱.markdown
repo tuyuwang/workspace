@@ -21,6 +21,14 @@ Q1:Cydia无法连接网络
 下载乐网app，开启全局拦截
 也可以通过在Cydia页面中开飞机模式，然后打开飞机模式，刷新界面，几次操作后去设置中找到移动蜂窝里的Cydia，打开网络允许即可
 
+```
+#如果能通过usb ssh登录的话, 可以使用以下命令删除网络权限文件. 重新打开cydia即可联网
+cd /var/preferences/
+rm com.apple.networkextension.plist 
+rm com.apple.networkextension.cache.plist
+rm com.apple.networkextension.necp.plist 
+```
+
 Q2:ssh 登录不了
 1、Cydia添加源
 - http://apt.abcydia.com/
