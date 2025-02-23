@@ -86,6 +86,20 @@ cryptid 1
 > lldb
 > process connect connect://192.168.2.145:1111
 
+### iOS 15.8.3 - 6s
+通过爱丝助手一键越狱, 安装Dopamine.
+
+存在无法ssh直接登陆root问题. 安装Dopamine时会设置mobile帐号的密码
+```
+ssh mobile@ip
+
+sudo passwd root
+
+#输入mobile密码
+#输入root默认密码 alpine
+#输入root新密码
+```
+即可用新密码登陆
 
 ### 一键砸壳
 使用Anaconda进行python环境管理，纯净环境，进行安装配置
